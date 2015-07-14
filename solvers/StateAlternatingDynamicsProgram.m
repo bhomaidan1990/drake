@@ -62,6 +62,19 @@ classdef StateAlternatingDynamicsProgram < MixedIntegerConvexProgram
         obj = obj.addSymbolicConstraints(v_next == v_next_desired);
         obj = obj.addSymbolicConstraints(z_next == z_next_desired);
         obj = obj.addSymbolicConstraints(Y_next == Y_next_desired);
+%         obj = obj.addSymbolicCost(norm(r_next - r_next_desired));
+%         obj = obj.addSymbolicCost(norm(v_next - v_next_desired));
+%         obj = obj.addSymbolicCost(norm(z_next - z_next_desired));
+%         obj = obj.addSymbolicCost(norm(Y_next - Y_next_desired));
+      end
+    end
+    
+    function angular_momentum = extractAngularMomentum(obj)
+      w = obj.vars.w.value;
+      z = obj.vars.z.value;
+      angular_momentum = 0*w;
+      for n = 1:obj.N
+        angular_momentum(:, n) = quatRotateVec(z(:,n), obj.I*w(:,n));
       end
     end
     
@@ -78,7 +91,7 @@ classdef StateAlternatingDynamicsProgram < MixedIntegerConvexProgram
     function obj = addPositionVariables(obj)
       obj = obj.addVariable('r', 'C', ...
         [3, obj.N], -obj.position_max, obj.position_max);
-      obj = obj.addVariable('z', 'C', [4, obj.N], 0, 1);
+      obj = obj.addVariable('z', 'C', [4, obj.N], -1, 1);
     end
 
     function obj = addVelocityVariables(obj)
