@@ -144,7 +144,7 @@ classdef StateAlternatingDynamicsProgram < MixedIntegerConvexProgram
       end
     end
 
-    function obj = addRegion(obj)
+    function obj = addRegion(obj, Ar, br, Ar_eq, br_eq, normal, mu)
     end
     
     function angular_momentum = extractAngularMomentum(obj)
