@@ -137,22 +137,6 @@ class Model {
                                      std::vector<PointPair>&
                                      closest_points) = 0;
 
-  /** Clears possibly cached results so that a fresh computation can be
-  performed.
-
-  @param[in] use_margins If `true`, the cache of the model with margins is
-  cleared. If `false`, the cache of the model without margins is cleared.
-
-  Depending on the implementation, the collision model may cache results on each
-  dispatch. For instance, Bullet uses cached results to warm-start its LCP
-  solvers.
-
-  Clearing cached results allows the collision model to perform a fresh
-  computation without any coupling with previous history.
-
-  @see drake/multibody/collision/test/model_test.cc. **/
-  virtual void ClearCachedResults(bool use_margins) = 0;
-
   /** Computes the closest distance from each point to any surface in the
    collision model utilizing Bullet's collision detection code.
 
@@ -276,6 +260,22 @@ class Model {
   friend std::ostream& operator<<(std::ostream&, const Model&);
 
  protected:
+  /** Clears possibly cached results so that a fresh computation can be
+  performed.
+
+  @param[in] use_margins If `true`, the cache of the model with margins is
+  cleared. If `false`, the cache of the model without margins is cleared.
+
+  Depending on the implementation, the collision model may cache results on each
+  dispatch. For instance, Bullet uses cached results to warm-start its LCP
+  solvers.
+
+  Clearing cached results allows the collision model to perform a fresh
+  computation without any coupling with previous history.
+
+  @see drake/multibody/collision/test/model_test.cc. **/
+  virtual void ClearCachedResults(bool use_margins) = 0;
+
   /** Allows sub-classes to do additional processing on elements added to the
    collision model.  This is called each time Model::AddElement is called.
 
