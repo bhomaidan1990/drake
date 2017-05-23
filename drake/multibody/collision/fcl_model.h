@@ -8,6 +8,7 @@
 #include "drake/multibody/collision/element.h"
 #include "drake/multibody/collision/model.h"
 #include "drake/multibody/collision/point_pair.h"
+#include <fcl/fcl.h>
 
 namespace DrakeCollision {
 
@@ -41,6 +42,8 @@ class FCLModel : public Model {
       const Eigen::Matrix3Xd& points, bool use_margins,
       std::vector<PointPair>& closest_points) override;
   void updateModel() override;
+ private:
+  fcl::DynamicAABBTreeCollisionManager<double> broadphase_manager_;
 };
 
 }  // namespace DrakeCollision
