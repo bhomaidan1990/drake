@@ -33,14 +33,6 @@ bool FCLModel::ComputeMaximumDepthCollisionPoints(
   return false;
 }
 
-bool FCLModel::closestPointsPairwise(const std::vector<ElementIdPair>& id_pairs,
-                                     bool use_margins,
-                                     std::vector<PointPair>& closest_points) {
-  drake::unused(id_pairs, use_margins, closest_points);
-  DRAKE_ABORT_MSG("Not implemented.");
-  return false;
-}
-
 void FCLModel::collisionDetectFromPoints(
     const Eigen::Matrix3Xd& points, bool use_margins,
     std::vector<PointPair>& closest_points) {

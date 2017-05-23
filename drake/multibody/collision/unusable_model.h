@@ -30,10 +30,6 @@ class UnusableModel : public Model {
   bool ComputeMaximumDepthCollisionPoints(
       bool use_margins, std::vector<PointPair>& points) override;
 
-  bool closestPointsPairwise(const std::vector<ElementIdPair>& id_pairs,
-                             bool use_margins,
-                             std::vector<PointPair>& closest_points) override;
-
   void collisionDetectFromPoints(
       const Eigen::Matrix3Xd& points, bool use_margins,
       std::vector<PointPair>& closest_points) override;

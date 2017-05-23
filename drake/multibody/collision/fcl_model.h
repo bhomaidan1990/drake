@@ -23,9 +23,6 @@ class FCLModel : public Model {
   bool closestPointsAllToAll(const std::vector<ElementId>& ids_to_check,
                              bool use_margins,
                              std::vector<PointPair>& closest_points) override;
-  bool closestPointsPairwise(const std::vector<ElementIdPair>& id_pairs,
-                             bool use_margins,
-                             std::vector<PointPair>& closest_points) override;
   bool collidingPointsCheckOnly(
       const std::vector<Eigen::Vector3d>& input_points,
       double collision_threshold) override;

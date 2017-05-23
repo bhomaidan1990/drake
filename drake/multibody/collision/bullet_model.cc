@@ -860,22 +860,22 @@ bool BulletModel::closestPointsAllToAll(
       }
     }
   }
-  return closestPointsPairwise(id_pairs, use_margins, closest_points);
+  return closestPointsPairwise(id_pairs, use_margins, &closest_points);
 }
 
 bool BulletModel::closestPointsPairwise(
     const std::vector<ElementIdPair>& id_pairs, bool use_margins,
-    std::vector<PointPair>& closest_points) {
-  closest_points.clear();
+    std::vector<PointPair>* closest_points) {
+  closest_points->clear();
   for (const ElementIdPair& pair : id_pairs) {
     try {
-      closest_points.push_back(findClosestPointsBetweenElements(
+      closest_points->push_back(findClosestPointsBetweenElements(
           pair.first, pair.second, use_margins));
     } catch (std::logic_error& e) {
       drake::log()->warn(e.what());
     }
   }
-  return closest_points.size() > 0;
+  return closest_points->size() > 0;
 }
 
 bool BulletModel::ComputeMaximumDepthCollisionPoints(

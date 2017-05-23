@@ -118,25 +118,6 @@ class Model {
       // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
       std::vector<PointPair>& closest_points) = 0;
 
-  /** Computes the points of closest approach between specified pairs of
-   collision elements.
-
-   @param id_pairs A vector of ElementIdPair specifying which pairs of
-   elements to consider
-
-   @param use_margins A flag indicating whether or not to use the version
-   of this model with collision margins
-
-   @param[out] closest_points A reference to a vector of PointPair objects
-   that contains the closest point information after this method is
-   called
-
-   @return Whether this method successfully ran. **/
-  virtual bool closestPointsPairwise(const std::vector<ElementIdPair>& id_pairs,
-                                     bool use_margins,
-                                     std::vector<PointPair>&
-                                     closest_points) = 0;
-
   /** Computes the closest distance from each point to any surface in the
    collision model utilizing Bullet's collision detection code.
 

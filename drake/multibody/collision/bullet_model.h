@@ -80,16 +80,6 @@ class BulletModel : public Model {
       bool use_margins, std::vector<PointPair>& points) override;
 
   /**
-   * Finds the points where each pair of elements in id_pairs are
-   * closest.  Inserts those points in closest_points.
-   *
-   * \return true if any points are found.
-   */
-  bool closestPointsPairwise(const std::vector<ElementIdPair>& id_pairs,
-                             bool use_margins,
-                             std::vector<PointPair>& closest_points) override;
-
-  /**
    * Computes the closest point in the collision world to each of a set of
    * points. For each query point, a PointPair instance, `p`, is returned with
    * the following semantics:
@@ -171,6 +161,24 @@ class BulletModel : public Model {
 
   static constexpr double kSmallMargin = 1e-9;
   static constexpr double kLargeMargin = 0.05;
+
+  /** Computes the points of closest approach between specified pairs of
+    collision elements.
+
+    @param id_pairs A vector of ElementIdPair specifying which pairs of
+    elements to consider
+
+    @param use_margins A flag indicating whether or not to use the version
+    of this model with collision margins
+
+    @param[out] closest_points A reference to a vector of PointPair objects
+    that contains the closest point information after this method is
+    called
+
+    @return Whether this method successfully ran. **/
+  bool closestPointsPairwise(const std::vector<ElementIdPair>& id_pairs,
+                             bool use_margins,
+                             std::vector<PointPair>* closest_points);
 
   /**
    * \brief Finds the points where elements A and B are closest.

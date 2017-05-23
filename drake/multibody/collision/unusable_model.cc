@@ -31,13 +31,6 @@ bool UnusableModel::ComputeMaximumDepthCollisionPoints(
   return false;
 }
 
-bool UnusableModel::closestPointsPairwise(
-    const std::vector<ElementIdPair>&, bool, std::vector<PointPair>&) {
-  DRAKE_ABORT_MSG(
-      "Compile Drake with a collision library backend for collision support!");
-  return false;
-}
-
 void UnusableModel::collisionDetectFromPoints(
     const Eigen::Matrix3Xd&, bool, std::vector<PointPair>&) {
   DRAKE_ABORT_MSG(
