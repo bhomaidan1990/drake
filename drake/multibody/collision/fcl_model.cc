@@ -12,6 +12,48 @@ namespace DrakeCollision {
 void FCLModel::DoAddElement(const Element& element) {
   drake::unused(element);
   DRAKE_ABORT_MSG("Not implemented.");
+
+  ElementId id = element.getId();
+
+  if (id != 0) {
+    // Create the fcl::CollisionObject
+    std::shared_ptr<fcl::CollisionGeometry<double>> fcl_geometry;
+
+    switch (element.getShape()) {
+      case DrakeShapes::BOX: {
+        const auto box =
+            static_cast<const DrakeShapes::Box&>(element.getGeometry());
+        fcl_geometry = std::shared_ptr<fcl::CollisionGeometry<double>>(new fcl::Box<double>(box.size));
+      } break;
+      case DrakeShapes::SPHERE: {
+        DRAKE_ABORT_MSG("Not implemented.");
+      } break;
+      case DrakeShapes::CYLINDER: {
+        DRAKE_ABORT_MSG("Not implemented.");
+      } break;
+      case DrakeShapes::MESH: {
+        DRAKE_ABORT_MSG("Not implemented.");
+      } break;
+      case DrakeShapes::MESH_POINTS: {
+        DRAKE_ABORT_MSG("Not implemented.");
+      } break;
+      case DrakeShapes::CAPSULE: {
+        DRAKE_ABORT_MSG("Not implemented.");
+      } break;
+      default:
+        DRAKE_ABORT_MSG("Not implemented.");
+        //std::cerr << "Warning: Collision elements[id] has an unknown type "
+                  //<< element.getShape() << std::endl;
+        //throw UnknownShapeException(element.getShape());
+        break;
+    }
+    
+    if (fcl_geometry != nullptr) {
+      std::unique_ptr<fcl::CollisionObject<double>> fcl_object{new fcl::CollisionObject<double>(fcl_geometry)};
+      // Register the object
+      broadphase_manager_.registerObject(fcl_object.get());
+    }
+  }
 }
 
 void FCLModel::updateModel() {
