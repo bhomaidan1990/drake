@@ -64,6 +64,15 @@ void FCLModel::DoAddElement(const Element& element) {
   }
 }
 
+bool FCLModel::updateElementWorldTransform(
+    ElementId id, const Isometry3d& T_local_to_world) {
+  const bool element_exists(
+      Model::updateElementWorldTransform(id, T_local_to_world));
+  if (element_exists) {
+    fcl_collision_objects_[id]->setTransform(T_local_to_world);
+  }
+  return element_exists;
+}
 void FCLModel::updateModel() {
   DRAKE_ABORT_MSG("Not implemented.");
 }

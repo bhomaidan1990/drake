@@ -44,6 +44,8 @@ class FCLModel : public Model {
   void collisionDetectFromPoints(
       const Eigen::Matrix3Xd& points, bool use_margins,
       std::vector<PointPair>& closest_points) override;
+  bool updateElementWorldTransform(
+      ElementId, const Eigen::Isometry3d& T_local_to_world) override;
   void updateModel() override;
  private:
   fcl::DynamicAABBTreeCollisionManager<double> broadphase_manager_;
