@@ -12,6 +12,9 @@
 
 namespace DrakeCollision {
 
+typedef std::unordered_map<ElementId, std::unique_ptr<fcl::CollisionObject<double>>>
+    ElementToFclObjMap;
+
 // TODO(jwnimmer-tri) This should be named FclModel per cppguide.
 class FCLModel : public Model {
  public:
@@ -44,6 +47,7 @@ class FCLModel : public Model {
   void updateModel() override;
  private:
   fcl::DynamicAABBTreeCollisionManager<double> broadphase_manager_;
+  ElementToFclObjMap fcl_collision_objects_;
 };
 
 }  // namespace DrakeCollision

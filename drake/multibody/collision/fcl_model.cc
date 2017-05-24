@@ -26,10 +26,14 @@ void FCLModel::DoAddElement(const Element& element) {
         fcl_geometry = std::shared_ptr<fcl::CollisionGeometry<double>>(new fcl::Box<double>(box.size));
       } break;
       case DrakeShapes::SPHERE: {
-        DRAKE_ABORT_MSG("Not implemented.");
+        const auto sphere =
+            static_cast<const DrakeShapes::Sphere&>(element.getGeometry());
+        fcl_geometry = std::shared_ptr<fcl::CollisionGeometry<double>>(new fcl::Sphere<double>(sphere.radius));
       } break;
       case DrakeShapes::CYLINDER: {
-        DRAKE_ABORT_MSG("Not implemented.");
+        const auto cylinder =
+            static_cast<const DrakeShapes::Cylinder&>(element.getGeometry());
+        fcl_geometry = std::shared_ptr<fcl::CollisionGeometry<double>>(new fcl::Cylinder<double>(cylinder.radius, cylinder.length));
       } break;
       case DrakeShapes::MESH: {
         DRAKE_ABORT_MSG("Not implemented.");
@@ -38,7 +42,9 @@ void FCLModel::DoAddElement(const Element& element) {
         DRAKE_ABORT_MSG("Not implemented.");
       } break;
       case DrakeShapes::CAPSULE: {
-        DRAKE_ABORT_MSG("Not implemented.");
+        const auto capsule =
+            static_cast<const DrakeShapes::Capsule&>(element.getGeometry());
+        fcl_geometry = std::shared_ptr<fcl::CollisionGeometry<double>>(new fcl::Capsule<double>(capsule.radius, capsule.length));
       } break;
       default:
         DRAKE_ABORT_MSG("Not implemented.");
@@ -50,8 +56,10 @@ void FCLModel::DoAddElement(const Element& element) {
     
     if (fcl_geometry != nullptr) {
       std::unique_ptr<fcl::CollisionObject<double>> fcl_object{new fcl::CollisionObject<double>(fcl_geometry)};
-      // Register the object
+      // Register the object with the collision manager
       broadphase_manager_.registerObject(fcl_object.get());
+      // Take ownership of FCL collision object
+      fcl_collision_objects_.insert(std::make_pair(id, move(fcl_object)));
     }
   }
 }
