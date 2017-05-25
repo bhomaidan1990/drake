@@ -73,6 +73,7 @@ drake_cc_library(
     srcs = [
         "fcl_model.cc",
         "fcl_model.h",
+        "drake_collision.cc",
     ],
     deps = [
         ":collision_api",
@@ -85,7 +86,7 @@ drake_cc_library(
 # choices, we may want to be more subtle here.
 alias(
     name = "collision",
-    actual = ":bullet_collision",
+    actual = ":fcl_collision",
 )
 
 drake_cc_googletest(
