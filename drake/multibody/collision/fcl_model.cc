@@ -7,6 +7,7 @@
 #include "drake/common/unused.h"
 
 using Eigen::Isometry3d;
+using Eigen::Vector3d;
 
 namespace DrakeCollision {
 
@@ -25,23 +26,40 @@ struct DistanceData
 };
 
 /// @brief Default distance callback for two objects o1 and o2 in broad phase. return value means whether the broad phase can stop now. also return dist, i.e. the bmin distance till now
-bool allToAllDistanceFunction(fcl::CollisionObjectd* o1,
-    fcl::CollisionObjectd* o2, void* cdata_, double& dist)
+bool allToAllDistanceFunction(fcl::CollisionObjectd* fcl_object_A,
+    fcl::CollisionObjectd* fcl_object_B, void* callback_data, double& dist)
 {
-  auto element1 = static_cast<Element*>(o1->getUserData());
-  auto element2 = static_cast<Element*>(o1->getUserData());
-  if (element1 && element2 && element1->CanCollideWith(element2)) {
-      auto* cdata = static_cast<DistanceData*>(cdata_);
-      const fcl::DistanceRequestd& request = cdata->request;
+  auto element_A = static_cast<Element*>(fcl_object_A->getUserData());
+  auto element_B = static_cast<Element*>(fcl_object_B->getUserData());
+  if (element_A && element_B && element_A->CanCollideWith(element_B)) {
+      // Unpack the callback data
+      auto* distance_data = static_cast<DistanceData*>(callback_data);
+      const fcl::DistanceRequestd& request = distance_data->request;
       fcl::DistanceResultd result;
 
-      distance(o1, o2, request, result);
+      // Perform nearphase distance computation
+      distance(fcl_object_A, fcl_object_B, request, result);
 
-      double distance = result.min_distance;
-      //auto normal = result.nearest_points[0]
-      //cdata->closest_points->emplace_back(element1, element2, 
-          //result.nearest_points[0], result.nearest_points[1], 
+      // Let the closest points on elements A and B be denoted by P and Q
+      // respectively
+      const Vector3d& p_WP = result.nearest_points[0];
+      const Vector3d& p_WQ = result.nearest_points[1];
 
+      double d_QP = result.min_distance;
+
+      // Define the normal as the unit vector from Q to P
+      auto n_QP = (p_WP - p_WQ)/d_QP;
+
+      // Transform the closest points to their respective body frames.
+      // Let element A be on body C and element B
+      const Isometry3d X_CA = element_A->getLocalTransform();
+      const Isometry3d X_DB = element_B->getLocalTransform();
+      const Isometry3d X_AW = element_A->getWorldTransform().inverse();
+      const Isometry3d X_BW = element_B->getWorldTransform().inverse();
+      const Vector3d p_CP = X_CA * X_AW * p_WP;
+      const Vector3d p_DQ = X_DB * X_BW * p_WQ;
+      distance_data->closest_points->emplace_back(element_A, element_B, 
+          p_CP, p_DQ, n_QP, d_QP);
   }
   return false; // Check all N^2 pairs
 }
@@ -107,7 +125,7 @@ bool FCLModel::updateElementWorldTransform(
   const bool element_exists(
       Model::updateElementWorldTransform(id, T_local_to_world));
   if (element_exists) {
-    fcl_collision_objects_[id]->setTransform(T_local_to_world);
+    fcl_collision_objects_[id]->setTransform(FindElement(id)->getWorldTransform());
   }
   return element_exists;
 }
@@ -118,7 +136,13 @@ void FCLModel::updateModel() {
 bool FCLModel::closestPointsAllToAll(const std::vector<ElementId>& ids_to_check,
                                      bool use_margins,
                                      std::vector<PointPair>& closest_points) {
-  return false;
+  DistanceData distance_data;
+  distance_data.closest_points = &closest_points;
+  distance_data.request.enable_nearest_points = true;
+  distance_data.request.enable_signed_distance = true;
+  distance_data.request.gjk_solver_type = fcl::GJKSolverType::GST_INDEP;
+  broadphase_manager_.distance(static_cast<void*>(&distance_data), allToAllDistanceFunction);
+  return true;
 }
 
 bool FCLModel::ComputeMaximumDepthCollisionPoints(
