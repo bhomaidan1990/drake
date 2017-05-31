@@ -36,28 +36,38 @@ bool allToAllDistanceFunction(fcl::CollisionObjectd* fcl_object_A,
       auto* distance_data = static_cast<DistanceData*>(callback_data);
       const fcl::DistanceRequestd& request = distance_data->request;
       fcl::DistanceResultd result;
+      fcl::detail::GJKSolver_indepd gjk_solver;
+      //TODO(avalenzu): Make this tolerance adjustable
+      gjk_solver.gjk_tolerance = std::pow(std::numeric_limits<double>::epsilon(), 0.7);
 
       // Perform nearphase distance computation
-      distance(fcl_object_A, fcl_object_B, request, result);
+      fcl::distance(fcl_object_A, fcl_object_B, &gjk_solver, request, result);
 
       // Let the closest points on elements A and B be denoted by P and Q
       // respectively
-      const Vector3d& p_WP = result.nearest_points[0];
-      const Vector3d& p_WQ = result.nearest_points[1];
+      //const Vector3d& p_WP = result.nearest_points[0];
+      //const Vector3d& p_WQ = result.nearest_points[1];
+      const Vector3d& p_AP = result.nearest_points[0];
+      const Vector3d& p_BQ = result.nearest_points[1];
 
       double d_QP = result.min_distance;
-
-      // Define the normal as the unit vector from Q to P
-      auto n_QP = (p_WP - p_WQ)/d_QP;
 
       // Transform the closest points to their respective body frames.
       // Let element A be on body C and element B
       const Isometry3d X_CA = element_A->getLocalTransform();
       const Isometry3d X_DB = element_B->getLocalTransform();
-      const Isometry3d X_AW = element_A->getWorldTransform().inverse();
-      const Isometry3d X_BW = element_B->getWorldTransform().inverse();
-      const Vector3d p_CP = X_CA * X_AW * p_WP;
-      const Vector3d p_DQ = X_DB * X_BW * p_WQ;
+      //const Isometry3d X_AW = element_A->getWorldTransform().inverse();
+      //const Isometry3d X_BW = element_B->getWorldTransform().inverse();
+      const Isometry3d X_WA = element_A->getWorldTransform();
+      const Isometry3d X_WB = element_B->getWorldTransform();
+      //const Vector3d p_CP = X_CA * X_AW * p_WP;
+      //const Vector3d p_DQ = X_DB * X_BW * p_WQ;
+      const Vector3d p_CP = X_CA * p_AP;
+      const Vector3d p_DQ = X_DB * p_BQ;
+
+      // Define the normal as the unit vector from Q to P
+      auto n_QP = (X_WA*p_AP - X_WB*p_BQ)/d_QP;
+
       distance_data->closest_points->emplace_back(element_A, element_B, 
           p_CP, p_DQ, n_QP, d_QP);
   }

@@ -148,6 +148,7 @@ github_archive(
 
 github_archive(
     name = "fcl",
+    local_repository_override = "/home/avalenzu/Repositories/fcl",
     repository = "flexible-collision-library/fcl",
     commit = "06d48b3b6f3605b8caf119d5208d8156eb64fe0d",
     build_file = "tools/fcl.BUILD",

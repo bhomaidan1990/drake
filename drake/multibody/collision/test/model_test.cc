@@ -265,6 +265,8 @@ class BoxVsSphereTest : public ::testing::Test {
  public:
   void SetUp() override {
     DrakeShapes::Box box(Vector3d(1.0, 1.0, 1.0));
+    //DrakeShapes::Sphere box(0.5);
+    //DrakeShapes::Box sphere(M_SQRT1_2*Vector3d(1.0, 1.0, 1.0));
     DrakeShapes::Sphere sphere(0.5);
 
     // Populate the model.
@@ -290,6 +292,7 @@ class BoxVsSphereTest : public ::testing::Test {
     Isometry3d sphere_pose;
     sphere_pose.setIdentity();
     sphere_pose.translation() = Vector3d(0.0, 1.75, 0.0);
+    //sphere_pose.rotate(Eigen::AngleAxisd(M_PI_4, Vector3d(0.0, 0.0, 1.0)));
     model_->updateElementWorldTransform(sphere_->getId(), sphere_pose);
   }
 
@@ -304,7 +307,7 @@ TEST_F(BoxVsSphereTest, SingleContact) {
   // Numerical precision tolerance to perform floating point comparisons.
   // Its magnitude was chosen to be the minimum value for which these tests can
   // successfully pass.
-  tolerance_ = 2.0e-9;
+  tolerance_ = 1.0e-9;
 
   // List of collision points.
   std::vector<PointPair> points;
@@ -315,11 +318,11 @@ TEST_F(BoxVsSphereTest, SingleContact) {
   ASSERT_EQ(1u, points.size());
   EXPECT_NEAR(0.25, points[0].distance, tolerance_);
   // Points are in the bodies' frame on the surface of the corresponding body.
-  EXPECT_TRUE(points[0].normal.isApprox(Vector3d(0.0, -1.0, 0.0)));
+  EXPECT_TRUE(points[0].normal.isApprox(Vector3d(0.0, -1.0, 0.0), tolerance_));
   EXPECT_TRUE(
-      points[0].ptA.isApprox(solution_[points[0].elementA].body_frame));
+      points[0].ptA.isApprox(solution_[points[0].elementA].body_frame, tolerance_));
   EXPECT_TRUE(
-      points[0].ptB.isApprox(solution_[points[0].elementB].body_frame));
+      points[0].ptB.isApprox(solution_[points[0].elementB].body_frame, tolerance_));
 
   // Collision test performed with Model::ComputeMaximumDepthCollisionPoints.
   // Not using margins.
@@ -811,7 +814,7 @@ TEST_F(BoxVsSphereTest, SingleContact) {
 //}
 
 //[>
- //This tests a sphere against a non-convex mesh
+ /*This tests a sphere against a non-convex mesh
 
       //______         \    /        _____    <---- z = 0.2
      ///      \         \__/        /     \   <---- z = 0.1
