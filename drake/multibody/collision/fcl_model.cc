@@ -65,6 +65,61 @@ bool allToAllDistanceFunction(fcl::CollisionObjectd* fcl_object_A,
   return false; // Check all N^2 pairs
 }
 
+/// @brief Distance data stores the distance request and the result given by distance algorithm.
+struct CollisionData
+{
+  /// @brief Collision request
+  fcl::CollisionRequestd request;
+
+  /// @brief Vector of distance results
+  std::vector<PointPair>* closest_points{nullptr};
+};
+
+bool collisionPointsFunction(fcl::CollisionObjectd* fcl_object_A,
+    fcl::CollisionObjectd* fcl_object_B, void* callback_data)
+{
+  auto element_A = static_cast<Element*>(fcl_object_A->getUserData());
+  auto element_B = static_cast<Element*>(fcl_object_B->getUserData());
+  if (element_A && element_B && element_A->CanCollideWith(element_B)) {
+      // Unpack the callback data
+      auto* collision_data = static_cast<CollisionData*>(callback_data);
+      const fcl::CollisionRequestd& request = collision_data->request;
+      fcl::CollisionResultd result;
+
+      // Perform nearphase collision detection
+      fcl::collide(fcl_object_A, fcl_object_B, request, result);
+
+      // Process the contact points
+      std::vector<fcl::Contactd> contacts;
+      result.getContacts(contacts);
+
+      for (auto contact : contacts) {
+        // Positive penetration depth corresponds to negative signed distance
+        double d_QP = -contact.penetration_depth;
+        // Define the normal as the unit vector from Q to P (opposite
+        // convention from FCL)
+        const Vector3d n_QP = -contact.normal;
+
+        // FCL returns a single contact point, but PointPair expects two
+        const Vector3d p_WP{contact.pos - 0.5*contact.normal*contact.penetration_depth};
+        const Vector3d p_WQ{contact.pos + 0.5*contact.normal*contact.penetration_depth};
+
+        // Transform the closest points to their respective body frames.
+        // Let element A be on body C and element B
+        //const Isometry3d X_CA = element_A->getLocalTransform();
+        //const Isometry3d X_DB = element_B->getLocalTransform();
+        //const Isometry3d X_AW = element_A->getWorldTransform().inverse();
+        //const Isometry3d X_BW = element_B->getWorldTransform().inverse();
+        //const Vector3d p_CP = X_CA * X_AW * p_WP;
+        //const Vector3d p_DQ = X_DB * X_BW * p_WQ;
+
+        collision_data->closest_points->emplace_back(element_A, element_B, 
+            p_WP, p_WQ, n_QP, d_QP);
+      }
+  }
+  return false; // Check all pairs provided by the broadphase
+}
+
 void FCLModel::DoAddElement(const Element& element) {
 
   ElementId id = element.getId();
@@ -149,8 +204,10 @@ bool FCLModel::closestPointsAllToAll(const std::vector<ElementId>& ids_to_check,
 
 bool FCLModel::ComputeMaximumDepthCollisionPoints(
     bool use_margins, std::vector<PointPair>& points) {
-  drake::unused(use_margins, points);
-  DRAKE_ABORT_MSG("Not implemented.");
+  CollisionData collision_data;
+  collision_data.closest_points = &points;
+  collision_data.request.gjk_solver_type = fcl::GJKSolverType::GST_INDEP;
+  broadphase_manager_.collide(static_cast<void*>(&collision_data), collisionPointsFunction);
   return false;
 }
 
