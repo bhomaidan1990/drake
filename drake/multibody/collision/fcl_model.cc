@@ -186,7 +186,7 @@ bool FCLModel::updateElementWorldTransform(
   return element_exists;
 }
 void FCLModel::updateModel() {
-  DRAKE_ABORT_MSG("Not implemented.");
+  broadphase_manager_.update();
 }
 
 bool FCLModel::closestPointsAllToAll(const std::vector<ElementId>& ids_to_check,
