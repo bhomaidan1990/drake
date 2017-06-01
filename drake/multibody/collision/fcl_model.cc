@@ -142,6 +142,7 @@ bool FCLModel::closestPointsAllToAll(const std::vector<ElementId>& ids_to_check,
   distance_data.request.enable_nearest_points = true;
   distance_data.request.enable_signed_distance = true;
   distance_data.request.gjk_solver_type = fcl::GJKSolverType::GST_INDEP;
+  distance_data.request.distance_tolerance = std::pow(std::numeric_limits<double>::epsilon(), 0.7);
   broadphase_manager_.distance(static_cast<void*>(&distance_data), allToAllDistanceFunction);
   return true;
 }
