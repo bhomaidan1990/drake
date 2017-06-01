@@ -51,29 +51,34 @@
     for more details.
     -->
     <collision group="brick">
-      <origin rpy="0 0 0" xyz="-1 -0.25 -0.5"/>
       <geometry>
-        <sphere radius="0.0"/>
+        <box size="2 .5 1" />
       </geometry>
     </collision>
-    <collision group="brick">
-      <origin rpy="0 0 0" xyz="1 -0.25 -0.5"/>
-      <geometry>
-        <sphere radius="0.0"/>
-      </geometry>
-    </collision>
-    <collision group="brick">
-      <origin rpy="0 0 0" xyz="1 0.25 -0.5"/>
-      <geometry>
-        <sphere radius="0.0"/>
-      </geometry>
-    </collision>
-    <collision group="brick">
-      <origin rpy="0 0 0" xyz="-1 0.25 -0.5"/>
-      <geometry>
-        <sphere radius="0.0"/>
-      </geometry>
-    </collision>
+    <!--<collision group="brick">-->
+      <!--<origin rpy="0 0 0" xyz="-1 -0.25 -0.5"/>-->
+      <!--<geometry>-->
+        <!--<sphere radius="0.0"/>-->
+      <!--</geometry>-->
+    <!--</collision>-->
+    <!--<collision group="brick">-->
+      <!--<origin rpy="0 0 0" xyz="1 -0.25 -0.5"/>-->
+      <!--<geometry>-->
+        <!--<sphere radius="0.0"/>-->
+      <!--</geometry>-->
+    <!--</collision>-->
+    <!--<collision group="brick">-->
+      <!--<origin rpy="0 0 0" xyz="1 0.25 -0.5"/>-->
+      <!--<geometry>-->
+        <!--<sphere radius="0.0"/>-->
+      <!--</geometry>-->
+    <!--</collision>-->
+    <!--<collision group="brick">-->
+      <!--<origin rpy="0 0 0" xyz="-1 0.25 -0.5"/>-->
+      <!--<geometry>-->
+        <!--<sphere radius="0.0"/>-->
+      <!--</geometry>-->
+    <!--</collision>-->
   </link>
 
   <joint name="xslide" type="prismatic">

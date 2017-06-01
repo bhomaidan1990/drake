@@ -107,13 +107,13 @@ bool collisionPointsFunction(fcl::CollisionObjectd* fcl_object_A,
         // Let element A be on body C and element B
         const Isometry3d X_CA = element_A->getLocalTransform();
         const Isometry3d X_DB = element_B->getLocalTransform();
-        const Isometry3d X_AW = element_A->getWorldTransform().inverse();
-        const Isometry3d X_BW = element_B->getWorldTransform().inverse();
-        const Vector3d p_CP = X_CA * X_AW * p_WP;
-        const Vector3d p_DQ = X_DB * X_BW * p_WQ;
+        //const Isometry3d X_AW = element_A->getWorldTransform().inverse();
+        //const Isometry3d X_BW = element_B->getWorldTransform().inverse();
+        //const Vector3d p_CP = X_CA * X_AW * p_WP;
+        //const Vector3d p_DQ = X_DB * X_BW * p_WQ;
 
         collision_data->closest_points->emplace_back(element_A, element_B, 
-            p_CP, p_DQ, n_QP, d_QP);
+            p_WP, p_WQ, n_QP, d_QP);
       }
   }
   return false; // Check all pairs provided by the broadphase
@@ -167,6 +167,14 @@ void FCLModel::DoAddElement(const Element& element) {
 
       // Store a pointer to the Element in the fcl collision object
       fcl_object->setUserData(FindMutableElement(id));
+
+      // NOTE: The FCL collision object is assigned the Drake element's
+      // world transform.  This will be the *only* time that anchored collision
+      // objects will have their world transform set.  This code assumes that
+      // the world transform on the corresponding input Drake element has
+      // already been properly set. (See RigidBodyTree::CompileCollisionState.)
+      fcl_object->setTransform(element.getWorldTransform());
+
       // Register the object with the collision manager
       broadphase_manager_.registerObject(fcl_object.get());
       // Take ownership of FCL collision object
@@ -186,6 +194,10 @@ bool FCLModel::updateElementWorldTransform(
 }
 void FCLModel::updateModel() {
   broadphase_manager_.update();
+}
+
+Eigen::Transform<double, 3, Eigen::AffineCompact> FCLModel::getFclObjectTransform(ElementId id) {
+  return fcl_collision_objects_[id]->getTransform();
 }
 
 bool FCLModel::closestPointsAllToAll(const std::vector<ElementId>& ids_to_check,
@@ -209,7 +221,7 @@ bool FCLModel::ComputeMaximumDepthCollisionPoints(
   collision_data.request.enable_contact = true;
   collision_data.request.num_max_contacts = 4;
   broadphase_manager_.collide(static_cast<void*>(&collision_data), collisionPointsFunction);
-  return false;
+  return true;
 }
 
 void FCLModel::collisionDetectFromPoints(
