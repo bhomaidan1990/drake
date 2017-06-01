@@ -181,7 +181,9 @@ int main() {
 
   simulator->StepTo(FLAGS_sim_duration);
 
-  while (FLAGS_playback) visualizer_publisher->ReplayCachedSimulation();
+  while (FLAGS_playback) {
+    visualizer_publisher->ReplayCachedSimulation();
+  }
 
   return 0;
 }

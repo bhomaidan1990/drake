@@ -94,27 +94,26 @@ bool collisionPointsFunction(fcl::CollisionObjectd* fcl_object_A,
       result.getContacts(contacts);
 
       for (auto contact : contacts) {
-        // Positive penetration depth corresponds to negative signed distance
-        double d_QP = -contact.penetration_depth;
+        double d_QP = contact.penetration_depth;
         // Define the normal as the unit vector from Q to P (opposite
         // convention from FCL)
         const Vector3d n_QP = -contact.normal;
 
         // FCL returns a single contact point, but PointPair expects two
-        const Vector3d p_WP{contact.pos - 0.5*contact.normal*contact.penetration_depth};
-        const Vector3d p_WQ{contact.pos + 0.5*contact.normal*contact.penetration_depth};
+        const Vector3d p_WP{contact.pos + d_QP*n_QP};
+        const Vector3d p_WQ{contact.pos};
 
         // Transform the closest points to their respective body frames.
         // Let element A be on body C and element B
-        //const Isometry3d X_CA = element_A->getLocalTransform();
-        //const Isometry3d X_DB = element_B->getLocalTransform();
-        //const Isometry3d X_AW = element_A->getWorldTransform().inverse();
-        //const Isometry3d X_BW = element_B->getWorldTransform().inverse();
-        //const Vector3d p_CP = X_CA * X_AW * p_WP;
-        //const Vector3d p_DQ = X_DB * X_BW * p_WQ;
+        const Isometry3d X_CA = element_A->getLocalTransform();
+        const Isometry3d X_DB = element_B->getLocalTransform();
+        const Isometry3d X_AW = element_A->getWorldTransform().inverse();
+        const Isometry3d X_BW = element_B->getWorldTransform().inverse();
+        const Vector3d p_CP = X_CA * X_AW * p_WP;
+        const Vector3d p_DQ = X_DB * X_BW * p_WQ;
 
         collision_data->closest_points->emplace_back(element_A, element_B, 
-            p_WP, p_WQ, n_QP, d_QP);
+            p_CP, p_DQ, n_QP, d_QP);
       }
   }
   return false; // Check all pairs provided by the broadphase
@@ -207,6 +206,8 @@ bool FCLModel::ComputeMaximumDepthCollisionPoints(
   CollisionData collision_data;
   collision_data.closest_points = &points;
   collision_data.request.gjk_solver_type = fcl::GJKSolverType::GST_INDEP;
+  collision_data.request.enable_contact = true;
+  collision_data.request.num_max_contacts = 4;
   broadphase_manager_.collide(static_cast<void*>(&collision_data), collisionPointsFunction);
   return false;
 }

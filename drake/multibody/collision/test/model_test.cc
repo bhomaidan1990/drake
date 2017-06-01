@@ -407,56 +407,56 @@ TEST_F(BoxVsSphereTest, SingleContact) {
       //solution_[points[0].elementB].body_frame, tolerance_ * 200));
 //}
 
-//// This test seeks to find out whether DrakeCollision::Model can report
-//// collision manifolds. To this end, a small cube with unit length sides is
-//// placed on top of a large cube with sides of length 5.0. The smaller cube is
-//// placed such that it intersects the large box. Therefore the intersection
-//// between the two boxes is not just a single point but the (squared) perimeter
-//// all around the smaller box (the manifold).
-////
-//// Unfortunately these tests show that DrakeCollision::Model only reports a
-//// single (randomly chosen) point at one of the smaller box corners. In previous
-//// runs this was the corner at (0.5, 0.5, z) where z = 5.0 for the top of the
-//// large box and z = 4.9 for the bottom of the smaller box.
-//class SmallBoxSittingOnLargeBox: public ::testing::Test {
- //public:
-  //void SetUp() override {
-    //// Boxes centered around the origin in their local frames.
-    //DrakeShapes::Box large_box(Vector3d(5.0, 5.0, 5.0));
-    //DrakeShapes::Box small_box(Vector3d(1.0, 1.0, 1.0));
+// This test seeks to find out whether DrakeCollision::Model can report
+// collision manifolds. To this end, a small cube with unit length sides is
+// placed on top of a large cube with sides of length 5.0. The smaller cube is
+// placed such that it intersects the large box. Therefore the intersection
+// between the two boxes is not just a single point but the (squared) perimeter
+// all around the smaller box (the manifold).
+//
+// Unfortunately these tests show that DrakeCollision::Model only reports a
+// single (randomly chosen) point at one of the smaller box corners. In previous
+// runs this was the corner at (0.5, 0.5, z) where z = 5.0 for the top of the
+// large box and z = 4.9 for the bottom of the smaller box.
+class SmallBoxSittingOnLargeBox: public ::testing::Test {
+ public:
+  void SetUp() override {
+    // Boxes centered around the origin in their local frames.
+    DrakeShapes::Box large_box(Vector3d(5.0, 5.0, 5.0));
+    DrakeShapes::Box small_box(Vector3d(1.0, 1.0, 1.0));
 
-    //// Populate the model.
-    //model_ = newModel();
-    //large_box_ = model_->AddElement(make_unique<Element>(large_box));
-    //small_box_ = model_->AddElement(make_unique<Element>(small_box));
+    // Populate the model.
+    model_ = newModel();
+    large_box_ = model_->AddElement(make_unique<Element>(large_box));
+    small_box_ = model_->AddElement(make_unique<Element>(small_box));
 
-    //// Access the analytical solution to the contact point on the surface of
-    //// each collision element by element id.
-    //// Solutions are expressed in world and body frames.
-    //solution_ = {
+    // Access the analytical solution to the contact point on the surface of
+    // each collision element by element id.
+    // Solutions are expressed in world and body frames.
+    solution_ = {
         //[>              world frame    , body frame  <]
-        //{large_box_, {{0.0, 5.0, 0.0}, {0.0,  2.5, 0.0}}},
-        //{small_box_, {{0.0, 4.9, 0.0}, {0.0, -0.5, 0.0}}}};
+        {large_box_, {{0.0, 5.0, 0.0}, {0.0,  2.5, 0.0}}},
+        {small_box_, {{0.0, 4.9, 0.0}, {0.0, -0.5, 0.0}}}};
 
-    //// Large body pose
-    //Isometry3d large_box_pose;
-    //large_box_pose.setIdentity();
-    //large_box_pose.translation() = Vector3d(0.0, 2.5, 0.0);
-    //model_->updateElementWorldTransform(large_box_->getId(), large_box_pose);
+    // Large body pose
+    Isometry3d large_box_pose;
+    large_box_pose.setIdentity();
+    large_box_pose.translation() = Vector3d(0.0, 2.5, 0.0);
+    model_->updateElementWorldTransform(large_box_->getId(), large_box_pose);
 
-    //// Small body pose
-    //Isometry3d small_box_pose;
-    //small_box_pose.setIdentity();
-    //small_box_pose.translation() = Vector3d(0.0, 5.4, 0.0);
-    //model_->updateElementWorldTransform(small_box_->getId(), small_box_pose);
-  //}
+    // Small body pose
+    Isometry3d small_box_pose;
+    small_box_pose.setIdentity();
+    small_box_pose.translation() = Vector3d(0.0, 5.4, 0.0);
+    model_->updateElementWorldTransform(small_box_->getId(), small_box_pose);
+  }
 
- //protected:
-  //double tolerance_;
-  //std::unique_ptr<Model> model_;
-  //Element* small_box_, * large_box_;
-  //ElementToSurfacePointMap solution_;
-//};
+ protected:
+  double tolerance_;
+  std::unique_ptr<Model> model_;
+  Element* small_box_, * large_box_;
+  ElementToSurfacePointMap solution_;
+};
 
 //TEST_F(SmallBoxSittingOnLargeBox, SingleContact) {
   //// Numerical precision tolerance to perform floating point comparisons.
@@ -528,41 +528,42 @@ TEST_F(BoxVsSphereTest, SingleContact) {
                //std::runtime_error);
 //}
 
-//// This test is exactly the same as the previous SmallBoxSittingOnLargeBox.
-//// The difference is that a multi-contact algorithm is being used.
-//// See REMARKS ON MULTICONTACT at the top of this file.
-//TEST_F(SmallBoxSittingOnLargeBox, MultiContact) {
-  //// Numerical precision tolerance to perform floating point comparisons.
-  //// Its magnitude was chosen to be the minimum value for which these tests can
-  //// successfully pass.
-  //tolerance_ = 2.0e-9;
+// This test is exactly the same as the previous SmallBoxSittingOnLargeBox.
+// The difference is that a multi-contact algorithm is being used.
+// See REMARKS ON MULTICONTACT at the top of this file.
+TEST_F(SmallBoxSittingOnLargeBox, MultiContact) {
+  // Numerical precision tolerance to perform floating point comparisons.
+  // Its magnitude was chosen to be the minimum value for which these tests can
+  // successfully pass.
+  tolerance_ = 2.0e-9;
 
-  //// List of collision points.
-  //std::vector<PointPair> points;
+  // List of collision points.
+  std::vector<PointPair> points;
 
-  //// Unfortunately DrakeCollision::Model is randomly selecting the contact
-  //// points. It is not even clear at this stage how many points in the manifold
-  //// we should expect.
-  //// What we can test for sure are:
-  //// 1. The penetration depth.
-  //// 2. The vertical position of the collision point (since for any of the four
-  ////    corners of the small box is the same).
+  // Unfortunately DrakeCollision::Model is randomly selecting the contact
+  // points. It is not even clear at this stage how many points in the manifold
+  // we should expect.
+  // What we can test for sure are:
+  // 1. The penetration depth.
+  // 2. The vertical position of the collision point (since for any of the four
+  //    corners of the small box is the same).
 
-  //// Collision test performed with Model::potentialCollisionPoints.
+  // Collision test performed with Model::potentialCollisionPoints.
+  model_->ComputeMaximumDepthCollisionPoints(false, points);
   //points = model_->potentialCollisionPoints(false);
-  //ASSERT_EQ(4u, points.size());
-  //for (const PointPair& point : points) {
-    //EXPECT_NEAR(-0.1, point.distance, tolerance_);
-    //EXPECT_TRUE(point.normal.isApprox(Vector3d(0.0, -1.0, 0.0)));
-    //// Collision points are reported on each of the respective bodies' frames.
-    //// This is consistent with the return by Model::closestPointsAllToAll.
-    //// Only test for vertical position.
-    //EXPECT_NEAR(point.ptA.y(),
-                //solution_[point.elementA].body_frame.y(), tolerance_);
-    //EXPECT_NEAR(point.ptB.y(),
-                //solution_[point.elementB].body_frame.y(), tolerance_);
-  //}
-//}
+  ASSERT_EQ(4u, points.size());
+  for (const PointPair& point : points) {
+    EXPECT_NEAR(-0.1, point.distance, tolerance_);
+    EXPECT_TRUE(point.normal.isApprox(Vector3d(0.0, -1.0, 0.0)));
+    // Collision points are reported on each of the respective bodies' frames.
+    // This is consistent with the return by Model::closestPointsAllToAll.
+    // Only test for vertical position.
+    EXPECT_NEAR(point.ptA.y(),
+                solution_[point.elementA].body_frame.y(), tolerance_);
+    EXPECT_NEAR(point.ptB.y(),
+                solution_[point.elementB].body_frame.y(), tolerance_);
+  }
+}
 
 //// This test seeks to find out whether DrakeCollision::Model can report
 //// collision manifolds. To this end two unit length boxes are placed on top of

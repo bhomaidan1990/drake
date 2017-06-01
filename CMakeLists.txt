@@ -184,7 +184,7 @@ drake_add_external(vtk PUBLIC CMAKE PYTHON QT
 
 # fcl
 drake_add_external(fcl PUBLIC CMAKE
-  CMAKE_ARGS -DFCL_BUILD_TESTS=OFF
+  CMAKE_ARGS -DFCL_BUILD_TESTS=ON
   DEPENDS ccd eigen octomap)
 
 # textbook
