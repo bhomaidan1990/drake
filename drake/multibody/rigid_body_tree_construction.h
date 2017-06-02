@@ -26,5 +26,13 @@ namespace multibody {
 void AddFlatTerrainToWorld(RigidBodyTreed* tree,
                            double box_size = 1000, double box_depth = 10);
 
+/**
+ * Adds a box geom to @p tree. The box's centroid is specified by @p pose
+ * relative to the world frame, and the dimension is specified by @p sides.
+ * The added geom's name is given by @p name.
+ */
+void AddBoxToWorld(const Isometry3<double>& pose, const Vector3<double>& sides,
+                   const std::string& name, RigidBodyTree<double>* tree);
+
 }  // namespace multibody
 }  // namespace drake
