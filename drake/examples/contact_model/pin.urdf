@@ -20,9 +20,10 @@
       </material>
     </visual>
     <collision group="pin">
-      <origin xyz="0 0 0.0815" rpy="0 0 0"/>
+      <!--<origin xyz="0 0 0.0815" rpy="0 0 0"/>-->
       <geometry>
-        <cylinder radius="0.061" length="0.381"/>
+        <mesh filename="./pin.obj" />
+        <!--<cylinder radius="0.061" length="0.381"/>-->
       </geometry>
     </collision>
 

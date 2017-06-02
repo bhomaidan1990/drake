@@ -58,6 +58,7 @@ DEFINE_double(v_tol, 0.01,
 DEFINE_double(dissipation, 2, "The contact model's dissipation");
 DEFINE_double(sim_duration, 3, "The simulation duration");
 DEFINE_int32(pin_count, 10, "The number of pins -- in the range [0, 10]");
+DEFINE_double(pin_distance, 15, "The distance to the first pin");
 DEFINE_bool(playback, true, "If true, loops playback of simulation");
 
 
@@ -76,6 +77,7 @@ int main() {
   cout << "\tslip threshold:   " << FLAGS_v_tol << "\n";
   cout << "\tdissipation:      " << FLAGS_dissipation << "\n";
   cout << "\tpin count:        " << FLAGS_pin_count << "\n";
+  cout << "\tpin count:        " << FLAGS_pin_distance << "\n";
 
   if (FLAGS_pin_count < 0 || FLAGS_pin_count > 10) {
     cerr << "Bad number of pins specified.  Must be in the range [0, 10]\n";
@@ -95,7 +97,7 @@ int main() {
         drake::GetDrakePath() + "/examples/contact_model/pin.urdf", kQuaternion,
         nullptr /* weld to frame */, tree_ptr.get());
   }
-  multibody::AddFlatTerrainToWorld(tree_ptr.get(), 100., 10.);
+  multibody::AddFlatTerrainToWorld(tree_ptr.get(), 50., 10.);
 
   // Instantiate a RigidBodyPlant from the RigidBodyTree.
   auto& plant = *builder.AddSystem<RigidBodyPlant<double>>(move(tree_ptr));
@@ -150,10 +152,10 @@ int main() {
   //      6   7   8   9    X
   // Set the origin to be 15 meters "down" the lane (along the x-axis) and
   // half way "across" (along y-axis) a 1-meter-wide lane).
-  const double kPinOriginX = 15.0;
+  const double kPinOriginX = FLAGS_pin_distance;
   const double kPinOriginY = 0.5;
   // The pin's geometric origin is 0.109 m above the "bottom" of the pin.
-  const double kPinZ = 0.109;
+  const double kPinZ = 0.4;
   const double kCos60 = std::cos(60.0 / 180 * M_PI) * 12 * 0.0254;
   const double kSin60 = std::sin(60.0 / 180 * M_PI) * 12 * 0.0254;
   const double pins_pos[] = { 0, 0,

@@ -97,7 +97,10 @@ bool collisionPointsFunction(fcl::CollisionObjectd* fcl_object_A,
         double d_QP = contact.penetration_depth;
         // Define the normal as the unit vector from Q to P (opposite
         // convention from FCL)
-        const Vector3d n_QP = -contact.normal;
+        Vector3d n_QP = -contact.normal;
+        if (element_A->getShape() == DrakeShapes::MESH) {
+          n_QP *= -1;
+        }
 
         // FCL returns a single contact point, but PointPair expects two
         const Vector3d p_WP{contact.pos + d_QP*n_QP};
@@ -105,8 +108,8 @@ bool collisionPointsFunction(fcl::CollisionObjectd* fcl_object_A,
 
         // Transform the closest points to their respective body frames.
         // Let element A be on body C and element B
-        const Isometry3d X_CA = element_A->getLocalTransform();
-        const Isometry3d X_DB = element_B->getLocalTransform();
+        //const Isometry3d X_CA = element_A->getLocalTransform();
+        //const Isometry3d X_DB = element_B->getLocalTransform();
         //const Isometry3d X_AW = element_A->getWorldTransform().inverse();
         //const Isometry3d X_BW = element_B->getWorldTransform().inverse();
         //const Vector3d p_CP = X_CA * X_AW * p_WP;
@@ -144,7 +147,22 @@ void FCLModel::DoAddElement(const Element& element) {
         fcl_geometry = std::shared_ptr<fcl::CollisionGeometryd>(new fcl::Cylinderd(cylinder.radius, cylinder.length));
       } break;
       case DrakeShapes::MESH: {
-        DRAKE_ABORT_MSG("Not implemented.");
+        const auto mesh =
+            static_cast<const DrakeShapes::Mesh&>(element.getGeometry());
+        DrakeShapes::PointsVector vertices;
+        DrakeShapes::TrianglesVector triangles;
+        mesh.LoadObjFile(&vertices, &triangles, DrakeShapes::Mesh::TriangulatePolicy::kTry);
+        typedef fcl::OBBRSSd bvh_type;
+        fcl_geometry = std::shared_ptr<fcl::CollisionGeometryd>(new fcl::BVHModel<bvh_type>());
+        auto fcl_bvh{static_cast<fcl::BVHModel<bvh_type>*>(fcl_geometry.get())};
+        int status;
+        status = fcl_bvh->beginModel(triangles.size(), vertices.size());
+        DRAKE_ASSERT(status == fcl::BVH_OK);
+        for (auto triangle : triangles) {
+          fcl_bvh->addTriangle(vertices[triangle(2)], vertices[triangle(1)], vertices[triangle(0)]);
+        }
+        status = fcl_bvh->endModel();
+        DRAKE_ASSERT(status == fcl::BVH_OK);
       } break;
       case DrakeShapes::MESH_POINTS: {
         DRAKE_ABORT_MSG("Not implemented.");
@@ -219,8 +237,8 @@ bool FCLModel::ComputeMaximumDepthCollisionPoints(
   collision_data.closest_points = &points;
   collision_data.request.gjk_solver_type = fcl::GJKSolverType::GST_INDEP;
   collision_data.request.enable_contact = true;
-  collision_data.request.num_max_contacts = 4;
-  collision_data.request.collision_tolerance = 1e-6;
+  collision_data.request.num_max_contacts = 1e3;
+  collision_data.request.collision_tolerance = 1e-12;
   broadphase_manager_.collide(static_cast<void*>(&collision_data), collisionPointsFunction);
   return true;
 }
