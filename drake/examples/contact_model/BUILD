@@ -32,6 +32,28 @@ drake_cc_binary(
 )
 
 drake_cc_binary(
+    name = "falling_bricks",
+    srcs = ["falling_bricks.cc"],
+    add_test_rule = 1,
+    data = ["brick.urdf"],
+    test_rule_args = [
+        " --sim_duration=0.01",
+        " --playback=false",
+    ],
+    deps = [
+        "//drake/common:drake_path",
+        "//drake/lcm",
+        "//drake/multibody:rigid_body_tree_construction",
+        "//drake/multibody/parsers",
+        "//drake/multibody/rigid_body_plant",
+        "//drake/multibody/rigid_body_plant:drake_visualizer",
+        "//drake/systems/analysis",
+        "//drake/systems/primitives:constant_vector_source",
+        "@com_github_gflags_gflags//:gflags",
+    ],
+)
+
+drake_cc_binary(
     name = "rigid_gripper",
     srcs = ["rigid_gripper.cc"],
     add_test_rule = 1,
