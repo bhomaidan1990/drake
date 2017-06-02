@@ -7,6 +7,7 @@
 #include "drake/common/drake_path.h"
 #include "drake/common/eigen_types.h"
 #include "drake/lcm/drake_lcm.h"
+#include "drake/math/random_rotation.h"
 #include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/rigid_body_plant/drake_visualizer.h"
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
@@ -34,6 +35,10 @@ using std::make_unique;
 // will promptly begin infinitely looping playback in wall clock time.
 
 // Simulation parameters.
+DEFINE_int32(brick_count, 2, "The number of falling bricks");
+DEFINE_bool(random_orientation, true, 
+    "If true, randomizes the initial orientations of the bricks");
+DEFINE_double(delta_z, 2, "Vertical distance between brick centers");
 DEFINE_double(timestep, 1e-4, "The simulator time step");
 DEFINE_double(stiffness, 100000, "The contact model's stiffness");
 DEFINE_double(us, 0.9, "The static coefficient of friction");
@@ -50,6 +55,9 @@ DEFINE_bool(playback, true,
 // pushing direction.
 int main() {
   std::cout << "Parameters:\n";
+  std::cout << "\tNumber of bricks: " << FLAGS_brick_count << "\n";
+  std::cout << "\tRandomize orientation: " << FLAGS_random_orientation << "\n";
+  std::cout << "\tVertical spacing: " << FLAGS_delta_z << "\n";
   std::cout << "\tTime step:        " << FLAGS_timestep << "\n";
   std::cout << "\tStiffness:        " << FLAGS_stiffness << "\n";
   std::cout << "\tStatic friction:  " << FLAGS_us << "\n";
@@ -61,10 +69,12 @@ int main() {
 
   // Create RigidBodyTree.
   auto tree_ptr = make_unique<RigidBodyTree<double>>();
-  drake::parsers::urdf::AddModelInstanceFromUrdfFile(
-      drake::GetDrakePath() + "/examples/contact_model/brick.urdf",
-      kQuaternion, nullptr /* weld to frame */, tree_ptr.get());
-  //multibody::AddFlatTerrainToWorld(tree_ptr.get(), 100., 10.);
+  for (int i = 0; i < FLAGS_brick_count; ++i) {
+    drake::parsers::urdf::AddModelInstanceFromUrdfFile(
+        drake::GetDrakePath() + "/examples/contact_model/brick.urdf",
+        kQuaternion, nullptr /* weld to frame */, tree_ptr.get());
+  }
+  multibody::AddFlatTerrainToWorld(tree_ptr.get(), 100., 10.);
 
   // Instantiate a RigidBodyPlant from the RigidBodyTree.
   auto& plant = *builder.AddSystem<RigidBodyPlant<double>>(move(tree_ptr));
@@ -96,14 +106,26 @@ int main() {
                                                              context);
   // Set initial state.
   auto plant_context = diagram->GetMutableSubsystemContext(context, &plant);
-  // 7 position variables + 6 velocity variables
-  const int kStateSize = 13;
+  // 1 floating quat joint = |xyz|, |q|, |w|, |xyzdot| = 3 + 4 + 3 + 3.
+  const int kStateSize = 13 * FLAGS_brick_count;
   DRAKE_DEMAND(plant_context->get_continuous_state_vector().size() ==
                kStateSize);
   VectorX<double> initial_state(kStateSize);
 
-  // Brick -- simply move it *up*
-  initial_state.segment<7>(0) << 0, 0, 3, 1, 0, 0, 0;
+  std::default_random_engine generator;
+  for (int i = 0; i < FLAGS_brick_count; ++i) {
+  // Place each brick 1.5 m above the previous one
+    initial_state.segment<3>(i*7) << 0, 0, FLAGS_delta_z * (i + 0.5);
+    if (FLAGS_random_orientation) {
+      initial_state.segment<4>(i*7+3) = drake::math::UniformlyRandomQuat(generator);
+    } else {
+      initial_state.segment<4>(i*7+3) << 1, 0, 0, 0;
+    }
+    // Zero initial velocities
+    initial_state.segment<6>(FLAGS_brick_count*7 + i*6) << 0, 0, 0, 0, 0, 0;
+  }
+
+
   plant.set_state_vector(plant_context, initial_state);
 
   simulator->StepTo(FLAGS_sim_duration);
