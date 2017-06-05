@@ -103,6 +103,7 @@ drake_cc_googletest(
     name = "fcl_model_test",
     deps = [
         ":fcl_collision",
+        "//drake/common:eigen_matrix_compare",
     ],
 )
 

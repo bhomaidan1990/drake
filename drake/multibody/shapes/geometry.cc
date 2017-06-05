@@ -43,6 +43,8 @@ string ShapeToString(Shape ss) {
       return "MESH_POINTS";
     case CAPSULE:
       return "CAPSULE";
+    case HALFSPACE:
+      return "HALFSPACE";
   }
   return "UNDEFINED";
 }
@@ -548,6 +550,30 @@ void MeshPoints::getBoundingBoxPoints(Matrix3Xd& bbox_points) const {
 
 ostream& operator<<(ostream& out, const MeshPoints& mp) {
   out << static_cast<const Geometry&>(mp) << ",\n" << mp.points;
+  return out;
+}
+
+Halfspace::Halfspace() : Geometry(HALFSPACE) {}
+
+Halfspace* Halfspace::clone() const { return new Halfspace(*this); }
+
+void Halfspace::getPoints(Matrix3Xd& points) const {
+  drake::unused(points);
+  DRAKE_ABORT_MSG("Not implemented.");
+}
+
+void Halfspace::getBoundingBoxPoints(Matrix3Xd& points) const {
+  drake::unused(points);
+  DRAKE_ABORT_MSG("Not implemented.");
+}
+
+void Halfspace::getTerrainContactPoints(Matrix3Xd& points) const {
+  drake::unused(points);
+  DRAKE_ABORT_MSG("Not implemented.");
+}
+
+ostream& operator<<(ostream& out, const Halfspace& ss) {
+  out << static_cast<const Geometry&>(ss);
   return out;
 }
 

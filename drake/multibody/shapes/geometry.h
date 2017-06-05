@@ -15,7 +15,8 @@ enum Shape {
   CYLINDER = 3,
   MESH = 4,
   MESH_POINTS = 5,
-  CAPSULE = 6
+  CAPSULE = 6,
+  HALFSPACE = 7
 };
 
 typedef std::vector<Eigen::Vector3d> PointsVector;
@@ -280,6 +281,24 @@ class MeshPoints : public Geometry {
   friend std::ostream& operator<<(std::ostream&, const MeshPoints&);
 
   Eigen::Matrix3Xd points;
+};
+
+class Halfspace : public Geometry {
+ public:
+  explicit Halfspace();
+  virtual ~Halfspace() {}
+  virtual Halfspace* clone() const;
+  // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+  virtual void getPoints(Eigen::Matrix3Xd& points) const;
+  // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+  virtual void getBoundingBoxPoints(Eigen::Matrix3Xd& points) const;
+  // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
+  virtual void getTerrainContactPoints(Eigen::Matrix3Xd& points) const;
+
+  /**
+   * A toString method for this class.
+   */
+  friend std::ostream& operator<<(std::ostream&, const Sphere&);
 };
 
 }  // namespace DrakeShapes
