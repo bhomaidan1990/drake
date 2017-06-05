@@ -94,7 +94,8 @@ bool collisionPointsFunction(fcl::CollisionObjectd* fcl_object_A,
       result.getContacts(contacts);
 
       for (auto contact : contacts) {
-        double d_QP = contact.penetration_depth;
+        // Signed distance is negative when penetration depth is positive
+        double d_QP = -contact.penetration_depth;
         // Define the normal as the unit vector from Q to P (opposite
         // convention from FCL)
         Vector3d n_QP = -contact.normal;
@@ -103,8 +104,8 @@ bool collisionPointsFunction(fcl::CollisionObjectd* fcl_object_A,
         }
 
         // FCL returns a single contact point, but PointPair expects two
-        const Vector3d p_WP{contact.pos + d_QP*n_QP};
-        const Vector3d p_WQ{contact.pos};
+        const Vector3d p_WP{contact.pos + 0.5*d_QP*n_QP};
+        const Vector3d p_WQ{contact.pos - 0.5*d_QP*n_QP};
 
         // Transform the closest points to their respective body frames.
         // Let element A be on body C and element B
@@ -171,6 +172,9 @@ void FCLModel::DoAddElement(const Element& element) {
         const auto capsule =
             static_cast<const DrakeShapes::Capsule&>(element.getGeometry());
         fcl_geometry = std::shared_ptr<fcl::CollisionGeometryd>(new fcl::Capsuled(capsule.radius, capsule.length));
+      } break;
+      case DrakeShapes::HALFSPACE: {
+        fcl_geometry = std::shared_ptr<fcl::CollisionGeometryd>(new fcl::Halfspaced(0, 0, 1, 0));
       } break;
       default:
         DRAKE_ABORT_MSG("Not implemented.");
