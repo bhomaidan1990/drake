@@ -3,21 +3,46 @@
  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
  xsi:schemaLocation="http://drake.mit.edu ../../../../doc/drakeURDF.xsd" name="Brick">
 
-  <link name="brick">
+  <!--<link name="brick">-->
+    <!--<inertial>-->
+      <!--<mass value="50"/>-->
+      <!--<inertia ixx="50" ixy="0" ixz="0" iyy="100" iyz="0" izz="100"/>-->
+    <!--</inertial>-->
+    <!--<visual>-->
+      <!--<geometry>-->
+        <!--<box size="2 .5 1" />-->
+      <!--</geometry>-->
+    <!--</visual>-->
+    <!--<collision group="brick">-->
+      <!--<geometry>-->
+        <!--<box size="2 .5 1" />-->
+      <!--</geometry>-->
+    <!--</collision>-->
+  <!--</link>-->
+ <!-- Bowling pin -->
+  <link name="pin">
     <inertial>
-      <mass value="50"/>
-      <inertia ixx="50" ixy="0" ixz="0" iyy="100" iyz="0" izz="100"/>
+      <mass value="1.5"/>
+      <origin xyz="0 0 0.127" rpy="0 0 0"/>
+      <inertia ixx="0.05" ixy="0" ixz="0" iyy="0.05" iyz="0" izz="0.002"/>
     </inertial>
+
     <visual>
       <geometry>
-        <box size="2 .5 1" />
+        <mesh filename="./pin.obj" />
       </geometry>
+      <material name="">
+        <color rgba="0 0 1 1" />
+      </material>
     </visual>
-    <collision group="brick">
+    <collision group="pin">
+      <!--<origin xyz="0 0 0.0815" rpy="0 0 0"/>-->
       <geometry>
-        <box size="2 .5 1" />
+        <mesh filename="./pin.obj" />
+        <!--<cylinder radius="0.061" length="0.381"/>-->
       </geometry>
     </collision>
+
   </link>
 </robot>
 

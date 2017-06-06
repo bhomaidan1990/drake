@@ -77,7 +77,7 @@ int main() {
   cout << "\tslip threshold:   " << FLAGS_v_tol << "\n";
   cout << "\tdissipation:      " << FLAGS_dissipation << "\n";
   cout << "\tpin count:        " << FLAGS_pin_count << "\n";
-  cout << "\tpin count:        " << FLAGS_pin_distance << "\n";
+  cout << "\tpin distance:        " << FLAGS_pin_distance << "\n";
 
   if (FLAGS_pin_count < 0 || FLAGS_pin_count > 10) {
     cerr << "Bad number of pins specified.  Must be in the range [0, 10]\n";

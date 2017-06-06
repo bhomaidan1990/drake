@@ -99,7 +99,7 @@ bool collisionPointsFunction(fcl::CollisionObjectd* fcl_object_A,
         // Define the normal as the unit vector from Q to P (opposite
         // convention from FCL)
         Vector3d n_QP = -contact.normal;
-        if (element_A->getShape() == DrakeShapes::MESH) {
+        if (element_A->getShape() == DrakeShapes::MESH && element_B->getShape() == DrakeShapes::MESH) {
           n_QP *= -1;
         }
 
