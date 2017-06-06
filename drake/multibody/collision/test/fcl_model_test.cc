@@ -47,18 +47,15 @@ struct SurfacePoint {
 typedef std::unordered_map<const DrakeCollision::Element*, SurfacePoint>
     ElementToSurfacePointMap;
 
-// TODO(jamiesnape): Test the model.
-
-// TODO(jamiesnape): Remove this test as redundant once model is implemented.
-
 struct ShapeVsShapeTestParam {
   ShapeVsShapeTestParam(const DrakeShapes::Geometry& shape_A,
                         const DrakeShapes::Geometry& shape_B,
                         Isometry3d X_WA, Isometry3d X_WB,
                         SurfacePoint surface_point_A,
-                        SurfacePoint surface_point_B)
-  : element_A_(shape_A), element_B_(shape_B), 
-  surface_point_A_(surface_point_A), surface_point_B_(surface_point_B) {
+                        SurfacePoint surface_point_B,
+                        fcl::GJKSolverType gjk_solver_type)
+  : element_A_(shape_A), element_B_(shape_B), surface_point_A_(surface_point_A),
+  surface_point_B_(surface_point_B), gjk_solver_type_(gjk_solver_type) {
     element_A_.updateWorldTransform(X_WA);
     element_B_.updateWorldTransform(X_WB);
   }
@@ -68,18 +65,32 @@ struct ShapeVsShapeTestParam {
                             other.element_B_.getGeometry(),
                             other.element_A_.getWorldTransform(),
                             other.element_B_.getWorldTransform(),
-                            other.surface_point_A_, other.surface_point_B_) {}
+                            other.surface_point_A_, other.surface_point_B_, 
+                            other.gjk_solver_type_) {}
 
   DrakeShapes::Element element_A_, element_B_;
   SurfacePoint surface_point_A_, surface_point_B_;
+  fcl::GJKSolverType gjk_solver_type_;
 };
+
+void PrintTo(const ShapeVsShapeTestParam& param, ::std::ostream* os) {
+  *os << DrakeShapes::ShapeToString(param.element_A_.getShape());
+  *os << "_"; 
+  *os << DrakeShapes::ShapeToString(param.element_B_.getShape());
+  if (param.gjk_solver_type_ == fcl::GST_INDEP) {
+    *os << "_GST:INDEP";
+  } else {
+    *os << "_GST:LIBCCD";
+  }
+}
 
 class ShapeVsShapeTest : public ::testing::TestWithParam<ShapeVsShapeTestParam> {
  public:
   void SetUp() override {
     // Populate the model.
     ShapeVsShapeTestParam param = GetParam();
-    model_ = unique_ptr<Model>(new FCLModel());
+    model_ = unique_ptr<FCLModel>(new FCLModel());
+    model_->set_narrowphase_solver_type(param.gjk_solver_type_);
     element_A_ = model_->AddElement(make_unique<Element>(param.element_A_.getGeometry()));
     element_B_ = model_->AddElement(make_unique<Element>(param.element_B_.getGeometry()));
     model_->updateElementWorldTransform(element_A_->getId(), param.element_A_.getWorldTransform());
@@ -91,7 +102,7 @@ class ShapeVsShapeTest : public ::testing::TestWithParam<ShapeVsShapeTestParam> 
 
  protected:
   double tolerance_;
-  std::unique_ptr<Model> model_;
+  std::unique_ptr<FCLModel> model_;
   ElementToSurfacePointMap solution_;
   Element* element_A_;
   Element* element_B_;
@@ -139,7 +150,7 @@ TEST_P(ShapeVsShapeTest, ComputeMaximumDepthCollisionPoints) {
         drake::MatrixCompareType::absolute));
 }
 
-ShapeVsShapeTestParam generateSphereVsSphereParam() {
+vector<ShapeVsShapeTestParam> generateSphereVsSphereParam() {
   //First sphere
   DrakeShapes::Sphere sphere_A{0.5};
   Isometry3d X_WA;
@@ -160,16 +171,26 @@ ShapeVsShapeTestParam generateSphereVsSphereParam() {
   Vector3d n_QP_W{0.0, -1.0, 0.0};
   SurfacePoint surface_point_B = {p_WQ, p_BQ, n_QP_W};
 
-  return ShapeVsShapeTestParam(sphere_A, sphere_B, X_WA, X_WB, surface_point_A, surface_point_B);
+  vector<ShapeVsShapeTestParam> params;
+  params.push_back(ShapeVsShapeTestParam(sphere_A, sphere_B, X_WA, X_WB,
+        surface_point_A, surface_point_B, fcl::GST_INDEP));
+  params.push_back(ShapeVsShapeTestParam(sphere_A, sphere_B, X_WA, X_WB,
+        surface_point_A, surface_point_B, fcl::GST_LIBCCD));
+  params.push_back(ShapeVsShapeTestParam(sphere_B, sphere_A, X_WB, X_WA,
+        surface_point_B, surface_point_A, fcl::GST_INDEP));
+  params.push_back(ShapeVsShapeTestParam(sphere_B, sphere_A, X_WB, X_WA,
+        surface_point_B, surface_point_A, fcl::GST_LIBCCD));
+  
+  return params;
 }
 
-INSTANTIATE_TEST_CASE_P(SphereVsSphere, ShapeVsShapeTest, ::testing::Values(generateSphereVsSphereParam()));
+INSTANTIATE_TEST_CASE_P(SphereVsSphere, ShapeVsShapeTest, ::testing::ValuesIn(generateSphereVsSphereParam()));
 
 // A sphere of diameter 1.0 is placed on top of a halfspace.  The sphere
 // overlaps with the halfspace with its deepest penetration point (the bottom)
 // 0.25 units into the halfspace (negative distance). Only one contact point is
 // expected when colliding with a sphere.
-ShapeVsShapeTestParam generateHalfspaceVsSphereParam() {
+vector<ShapeVsShapeTestParam> generateHalfspaceVsSphereParam() {
   //Halfspace
   DrakeShapes::Halfspace halfspace;
   Isometry3d X_WA;
@@ -190,90 +211,59 @@ ShapeVsShapeTestParam generateHalfspaceVsSphereParam() {
   Vector3d n_QP_W{0.0, -1.0, 0.0};
   SurfacePoint surface_point_B = {p_WQ, p_BQ, n_QP_W};
 
-  return ShapeVsShapeTestParam(halfspace, sphere, X_WA, X_WB, surface_point_A, surface_point_B);
+  vector<ShapeVsShapeTestParam> params;
+  params.push_back(ShapeVsShapeTestParam(halfspace, sphere, X_WA, X_WB,
+        surface_point_A, surface_point_B, fcl::GST_INDEP));
+  params.push_back(ShapeVsShapeTestParam(halfspace, sphere, X_WA, X_WB,
+        surface_point_A, surface_point_B, fcl::GST_LIBCCD));
+  params.push_back(ShapeVsShapeTestParam(sphere, halfspace, X_WB, X_WA,
+        surface_point_B, surface_point_A, fcl::GST_INDEP));
+  params.push_back(ShapeVsShapeTestParam(sphere, halfspace, X_WB, X_WA,
+        surface_point_B, surface_point_A, fcl::GST_LIBCCD));
+  
+  return params;
 }
 
-INSTANTIATE_TEST_CASE_P(HalfspaceVsSphere, ShapeVsShapeTest, ::testing::Values(generateHalfspaceVsSphereParam()));
+INSTANTIATE_TEST_CASE_P(HalfspaceVsSphere, ShapeVsShapeTest, ::testing::ValuesIn(generateHalfspaceVsSphereParam()));
 
-//class HalfspaceVsSphereTest : public ::testing::Test {
- //public:
-  //void SetUp() override {
-    //DrakeShapes::Halfspace halfspace;
-    //DrakeShapes::Sphere sphere(0.5);
+// A sphere of diameter 1.0 is placed  above a box.  The sphere overlaps with
+// the box with its deepest penetration point (the bottom) 0.25 units into the
+// box (negative distance). Only one contact point is expected when colliding
+// with a sphere.
+vector<ShapeVsShapeTestParam> generateBoxVsSphereParam() {
+  //Halfspace
+  DrakeShapes::Box box{Vector3d(1, 1, 1)};
+  Isometry3d X_WA;
+  X_WA.setIdentity();
+  X_WA.translation() = Vector3d(0, 0.5, 0);
+  Vector3d p_WP{0.0,  1.0, 0.0};
+  Vector3d p_AP{0.0,  0.5, 0.0};
+  Vector3d n_PQ_W{0.0, 1.0, 0.0};
+  SurfacePoint surface_point_A = {p_WP, p_AP, n_PQ_W};
 
-    //// Populate the model.
-    //model_ = unique_ptr<Model>(new FCLModel());
-    //halfspace_ = model_->AddElement(make_unique<Element>(halfspace));
-    //sphere_ = model_->AddElement(make_unique<Element>(sphere));
+  // Sphere
+  DrakeShapes::Sphere sphere{0.5};
+  Isometry3d X_WB;
+  X_WB.setIdentity();
+  X_WB.translation() = Vector3d(0.0, 1.25, 0.0);
+  Vector3d p_WQ{0.0,  0.75, 0.0};
+  Vector3d p_BQ{0.0,  -0.5, 0.0};
+  Vector3d n_QP_W{0.0, -1.0, 0.0};
+  SurfacePoint surface_point_B = {p_WQ, p_BQ, n_QP_W};
 
-    //// Access the analytical solution to the contact point on the surface of
-    //// each collision element by element id.
-    //// Solutions are expressed in world and body frames.
-    //solution_ = {
-        //[>           world frame     , body frame  <]
-        //{halfspace_,    {{0.0,  0.0, 0.0}, {0.0,  0.0, 0.0}}},
-        //{sphere_, {{0.0, -0.25, 0.0}, {0.0, -0.5, 0.0}}}};
+  vector<ShapeVsShapeTestParam> params;
+  params.push_back(ShapeVsShapeTestParam(box, sphere, X_WA, X_WB,
+        surface_point_A, surface_point_B, fcl::GST_INDEP));
+  params.push_back(ShapeVsShapeTestParam(box, sphere, X_WA, X_WB,
+        surface_point_A, surface_point_B, fcl::GST_LIBCCD));
+  params.push_back(ShapeVsShapeTestParam(sphere, box, X_WB, X_WA,
+        surface_point_B, surface_point_A, fcl::GST_INDEP));
+  params.push_back(ShapeVsShapeTestParam(sphere, box, X_WB, X_WA,
+        surface_point_B, surface_point_A, fcl::GST_LIBCCD));
+  
+  return params;
+}
 
-    //// Body 1 pose
-    //Isometry3d halfspace_pose;
-    //halfspace_pose.setIdentity();
-    //halfspace_pose.rotate(Eigen::AngleAxisd(M_PI_2, Vector3d(-1.0, 0.0, 0.0)));
-    //model_->updateElementWorldTransform(halfspace_->getId(), halfspace_pose);
-
-    //// Body 2 pose
-    //Isometry3d sphere_pose;
-    //sphere_pose.setIdentity();
-    //sphere_pose.translation() = Vector3d(0.0, 0.25, 0.0);
-    //model_->updateElementWorldTransform(sphere_->getId(), sphere_pose);
-  //}
-
- //protected:
-  //double tolerance_;
-  //std::unique_ptr<Model> model_;
-  //Element* halfspace_, * sphere_;
-  //ElementToSurfacePointMap solution_;
-//};
-
-//TEST_F(HalfspaceVsSphereTest, SingleContact) {
-  //// Numerical precision tolerance to perform floating point comparisons.
-  //// Its magnitude was chosen to be the minimum value for which these tests can
-  //// successfully pass.
-  //tolerance_ = 1.0e-9;
-
-  //// List of collision points.
-  //std::vector<PointPair> points;
-
-  //// Collision test performed with Model::ComputeMaximumDepthCollisionPoints.
-  //// Not using margins.
-  //points.clear();
-  //model_->ComputeMaximumDepthCollisionPoints(false, points);
-  //ASSERT_EQ(1u, points.size());
-  //EXPECT_NEAR(-0.25, points[0].distance, tolerance_);
-  //// Points are in the world frame on the surface of the corresponding body.
-  //// That is why ptA is generally different from ptB, unless there is
-  //// an exact non-penetrating collision.
-  //// WARNING:
-  //// This convention is different from the one used by closestPointsAllToAll
-  //// which computes points in the local frame of the body.
-  //// TODO(amcastro-tri): make these two conventions match? does this interfere
-  //// with any Matlab functionality?
-  //EXPECT_TRUE(CompareMatrices(points[0].normal, Vector3d(0.0, -1.0, 0.0),
-                              //tolerance_, drake::MatrixCompareType::absolute));
-  //EXPECT_TRUE(CompareMatrices(points[0].ptA,
-                              //solution_[points[0].elementA].world_frame,
-                              //tolerance_, drake::MatrixCompareType::absolute));
-  //EXPECT_TRUE(CompareMatrices(points[0].ptB,
-                              //solution_[points[0].elementB].world_frame,
-                              //tolerance_, drake::MatrixCompareType::absolute));
-
-  //points.clear();
-  //// Body 1 pose
-  //Isometry3d halfspace_pose{halfspace_->getWorldTransform()};
-  //halfspace_pose.translation() = Vector3d(0, -1, 0);
-  //model_->updateElementWorldTransform(halfspace_->getId(), halfspace_pose);
-  //model_->ComputeMaximumDepthCollisionPoints(false, points);
-  //ASSERT_EQ(0u, points.size());
-//}
-
+INSTANTIATE_TEST_CASE_P(BoxVsSphere, ShapeVsShapeTest, ::testing::ValuesIn(generateBoxVsSphereParam()));
 }  // namespace
 }  // namespace DrakeCollision
