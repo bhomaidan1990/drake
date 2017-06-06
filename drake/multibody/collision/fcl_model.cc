@@ -229,7 +229,7 @@ bool FCLModel::closestPointsAllToAll(const std::vector<ElementId>& ids_to_check,
   distance_data.closest_points = &closest_points;
   distance_data.request.enable_nearest_points = true;
   distance_data.request.enable_signed_distance = true;
-  distance_data.request.gjk_solver_type = fcl::GJKSolverType::GST_INDEP;
+  distance_data.request.gjk_solver_type = narrowphase_solver_type_;
   distance_data.request.distance_tolerance = std::pow(std::numeric_limits<double>::epsilon(), 0.7);
   broadphase_manager_.distance(static_cast<void*>(&distance_data), allToAllDistanceFunction);
   return true;
@@ -239,7 +239,7 @@ bool FCLModel::ComputeMaximumDepthCollisionPoints(
     bool use_margins, std::vector<PointPair>& points) {
   CollisionData collision_data;
   collision_data.closest_points = &points;
-  collision_data.request.gjk_solver_type = fcl::GJKSolverType::GST_INDEP;
+  collision_data.request.gjk_solver_type = narrowphase_solver_type_;
   collision_data.request.enable_contact = true;
   collision_data.request.num_max_contacts = 1e3;
   collision_data.request.collision_tolerance = 1e-12;
@@ -290,4 +290,11 @@ std::vector<size_t> FCLModel::collidingPoints(
   return std::vector<size_t>();
 }
 
+fcl::GJKSolverType FCLModel::get_narrowphase_solver_type() const {
+  return narrowphase_solver_type_;
+};
+
+void FCLModel::set_narrowphase_solver_type(fcl::GJKSolverType new_type) {
+  narrowphase_solver_type_ = new_type;
+}
 }  // namespace DrakeCollision
