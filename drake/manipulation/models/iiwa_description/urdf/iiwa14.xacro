@@ -44,7 +44,7 @@
         <collision>
           <origin xyz="0 0 0" rpy="0 0 0"/>
           <geometry>
-            <mesh filename="../meshes/collision/link_0.obj"/>
+            <mesh filename="../meshes/collision/link_0_decimated.obj"/>
           </geometry>
           <material name="Grey"/>
         </collision>
@@ -102,7 +102,7 @@
         <collision>
           <origin xyz="0 0 0" rpy="0 0 0"/>
           <geometry>
-            <mesh filename="../meshes/collision/link_1.obj"/>
+            <mesh filename="../meshes/collision/link_1_decimated.obj"/>
           </geometry>
           <material name="Grey"/>
         </collision>
@@ -153,7 +153,7 @@
         <collision>
           <origin xyz="0 0 0" rpy="0 0 0"/>
           <geometry>
-            <mesh filename="../meshes/collision/link_2.obj"/>
+            <mesh filename="../meshes/collision/link_2_decimated.obj"/>
           </geometry>
           <material name="Orange"/>
         </collision>
@@ -204,7 +204,7 @@
         <collision>
           <origin xyz="0 0 0" rpy="0 0 0"/>
           <geometry>
-            <mesh filename="../meshes/collision/link_3.obj"/>
+            <mesh filename="../meshes/collision/link_3_decimated.obj"/>
           </geometry>
           <material name="Grey"/>
         </collision>
@@ -255,7 +255,7 @@
         <collision>
           <origin xyz="0 0 0" rpy="0 0 0"/>
           <geometry>
-            <mesh filename="../meshes/collision/link_4.obj"/>
+            <mesh filename="../meshes/collision/link_4_decimated.obj"/>
           </geometry>
           <material name="Orange"/>
         </collision>
@@ -306,7 +306,7 @@
         <collision>
           <origin xyz="0 0 0" rpy="0 0 0"/>
           <geometry>
-            <mesh filename="../meshes/collision/link_5.obj"/>
+            <mesh filename="../meshes/collision/link_5_decimated.obj"/>
           </geometry>
           <material name="Grey"/>
         </collision>
@@ -357,7 +357,7 @@
         <collision>
           <origin xyz="0 0 0" rpy="0 0 0"/>
           <geometry>
-            <mesh filename="../meshes/collision/link_6.obj"/>
+            <mesh filename="../meshes/collision/link_6_decimated.obj"/>
           </geometry>
           <material name="Orange"/>
         </collision>
@@ -411,7 +411,7 @@
         <collision>
           <origin xyz="0 0 0" rpy="0 0 0"/>
           <geometry>
-            <mesh filename="../meshes/collision/link_7.obj"/>
+            <mesh filename="../meshes/collision/link_7_decimated.obj"/>
           </geometry>
           <material name="Grey"/>
         </collision>
@@ -456,6 +456,18 @@
     </link>
     <frame name="${robot_name}_frame_ee" link="${robot_name}_link_ee"
            xyz="0.09 0 0" rpy="3.14159265359 0 1.57079632679"/>
+
+         <collision_filter_group name="${robot_name}_arm">
+           <member link="${robot_name}_link_0"/>
+           <member link="${robot_name}_link_1"/>
+           <member link="${robot_name}_link_2"/>
+           <member link="${robot_name}_link_3"/>
+           <member link="${robot_name}_link_4"/>
+           <member link="${robot_name}_link_5"/>
+           <member link="${robot_name}_link_6"/>
+           <member link="${robot_name}_link_7"/>
+           <ignored_collision_filter_group collision_filter_group="${robot_name}_arm"/>
+         </collision_filter_group>
     <!--Extensions -->
     <xacro:iiwa_gazebo robot_name="${robot_name}" />
     <xacro:iiwa_transmission hardware_interface="${hardware_interface}"
