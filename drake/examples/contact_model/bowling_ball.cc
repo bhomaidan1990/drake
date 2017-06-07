@@ -36,6 +36,7 @@
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
 #include "drake/multibody/rigid_body_tree_construction.h"
 #include "drake/systems/analysis/simulator.h"
+#include "drake/systems/analysis/implicit_euler_integrator.h"
 #include "drake/systems/framework/diagram_builder.h"
 
 namespace drake {
@@ -45,6 +46,7 @@ using drake::lcm::DrakeLcm;
 using drake::multibody::joints::kQuaternion;
 using Eigen::VectorXd;
 using std::make_unique;
+using drake::systems::ImplicitEulerIntegrator;
 
 // Simulation parameters.
 DEFINE_double(v, 12, "The ball's initial linear speed down the lane");
@@ -60,6 +62,9 @@ DEFINE_double(sim_duration, 3, "The simulation duration");
 DEFINE_int32(pin_count, 10, "The number of pins -- in the range [0, 10]");
 DEFINE_double(pin_distance, 15, "The distance to the first pin");
 DEFINE_bool(playback, true, "If true, loops playback of simulation");
+DEFINE_bool(use_implicit, true, "If true, uses imlicit Euler integration");
+DEFINE_double(accuracy, 1e-5,
+              "Requested simulation accuracy (ignored for time stepping");
 
 
 // Bowling ball rolled down a conceptual lane to strike pins.
@@ -69,6 +74,8 @@ int main() {
 
   cout << "Parameters:\n";
   cout << "\ttimestep:         " << FLAGS_timestep << "\n";
+  cout << "\tuse_implicit:     " << FLAGS_use_implicit << "\n";
+  cout << "\taccuracy:         " << FLAGS_accuracy << "\n";
   cout << "\tv:                " << FLAGS_v << "\n";
   cout << "\tω:                " << FLAGS_w << "\n";
   cout << "\tstiffness:        " << FLAGS_stiffness << "\n";
@@ -126,9 +133,16 @@ int main() {
   // Create simulator.
   auto simulator = std::make_unique<Simulator<double>>(*diagram);
   auto context = simulator->get_mutable_context();
-  simulator->reset_integrator<RungeKutta2Integrator<double>>(*diagram,
-                                                             FLAGS_timestep,
-                                                             context);
+  if (FLAGS_use_implicit) {
+    simulator->reset_integrator<ImplicitEulerIntegrator<double>>(*diagram,
+                                                               context);
+  } else {
+    simulator->reset_integrator<RungeKutta2Integrator<double>>(*diagram,
+                                                               FLAGS_timestep,
+                                                               context);
+  }
+  simulator->get_mutable_integrator()->set_maximum_step_size(FLAGS_timestep);
+  simulator->get_mutable_integrator()->set_target_accuracy(FLAGS_accuracy);
   // Set initial state.
   auto plant_context = diagram->GetMutableSubsystemContext(context, &plant);
 
