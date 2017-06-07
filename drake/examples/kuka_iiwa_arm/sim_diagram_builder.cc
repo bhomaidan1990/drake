@@ -8,12 +8,12 @@ namespace kuka_iiwa_arm {
 
 template <typename T>
 systems::DrakeVisualizer* SimDiagramBuilder<T>::AddVisualizer(
-    drake::lcm::DrakeLcmInterface* lcm) {
+    drake::lcm::DrakeLcmInterface* lcm, bool enable_playback) {
   DRAKE_DEMAND(visualizer_ == nullptr);
   DRAKE_DEMAND(plant_ != nullptr);
 
   visualizer_ = builder_.template AddSystem<systems::DrakeVisualizer>(
-      plant_->get_rigid_body_tree(), lcm);
+      plant_->get_rigid_body_tree(), lcm, enable_playback);
   visualizer_->set_name("visualizer");
 
   return visualizer_;

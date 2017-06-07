@@ -80,7 +80,7 @@ class SimDiagramBuilder {
    * @param lcm Pointer to a lcm interface.
    * @return Pointer to the added visualizer.
    */
-  systems::DrakeVisualizer* AddVisualizer(drake::lcm::DrakeLcmInterface* lcm);
+  systems::DrakeVisualizer* AddVisualizer(drake::lcm::DrakeLcmInterface* lcm, bool enable_playback = false);
 
   /**
    * Adds a controller of type ControllerType, which must be derived from
