@@ -25,6 +25,7 @@ drake_cc_binary(
         "//drake/systems/primitives:trajectory_source",
         "@bot_core_lcmtypes",
         "@robotlocomotion_lcmtypes",
+        "@com_github_gflags_gflags//:gflags",
     ],
 )
 

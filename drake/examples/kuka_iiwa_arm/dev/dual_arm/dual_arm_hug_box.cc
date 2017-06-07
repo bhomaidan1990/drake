@@ -1,3 +1,7 @@
+#include <string>
+
+#include <gflags/gflags.h>
+
 #include "drake/examples/kuka_iiwa_arm/iiwa_common.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_world/world_sim_tree_builder.h"
 #include "drake/examples/kuka_iiwa_arm/sim_diagram_builder.h"
@@ -5,6 +9,7 @@
 #include "drake/multibody/rigid_body_plant/drake_visualizer.h"
 #include "drake/multibody/rigid_body_tree_construction.h"
 #include "drake/systems/analysis/simulator.h"
+#include "drake/systems/analysis/implicit_euler_integrator.h"
 #include "drake/systems/controllers/inverse_dynamics_controller.h"
 #include "drake/systems/primitives/trajectory_source.h"
 
@@ -13,17 +18,54 @@ namespace examples {
 namespace kuka_iiwa_arm {
 namespace {
 
+using drake::systems::RungeKutta2Integrator;
+using drake::systems::RigidBodyPlant;
+using drake::systems::ImplicitEulerIntegrator;
+
+// Simulation parameters.
+DEFINE_double(timestep, 1e-4, "The simulator time step");
+DEFINE_double(sim_duration, 3, "The simulation duration");
+DEFINE_bool(playback, true,
+            "If true, enters looping playback after sim finished");
+DEFINE_string(collision_type, "polytope",
+              "Type of simulation, valid values are "
+              "'polytope','mesh'");
+DEFINE_double(stiffness, 100000, "The contact model's stiffness");
+DEFINE_double(dissipation, 1.0, "The contact model's dissipation");
+DEFINE_double(us, 0.9, "The static coefficient of friction");
+DEFINE_double(ud, 0.5, "The dynamic coefficient of friction");
+DEFINE_double(v_tol, 0.01,
+              "The maximum slipping speed allowed during stiction");
+DEFINE_bool(use_implicit, true, "If true, uses imlicit Euler integration");
+DEFINE_double(accuracy, 1e-5,
+              "Requested simulation accuracy (ignored for time stepping");
+
+enum CollisionType {
+  kPolytope = 0,
+  kMesh = 1,
+};
+
 std::unique_ptr<RigidBodyTree<double>> build_tree(
     std::vector<ModelInstanceInfo<double>>* iiwa,
-    ModelInstanceInfo<double>* box) {
+    ModelInstanceInfo<double>* box,
+    CollisionType collision_type) {
   auto tree_builder = std::make_unique<WorldSimTreeBuilder<double>>();
 
   // Adds models to the simulation builder. Instances of these models can be
   // subsequently added to the world.
-  tree_builder->StoreModel(
-      "iiwa",
-      "/manipulation/models/iiwa_description/urdf/"
-          "iiwa14_polytope_collision.urdf");
+  std::string iiwa_urdf{"/manipulation/models/iiwa_description/urdf/"};
+  switch (collision_type) {
+    case CollisionType::kPolytope: {
+      iiwa_urdf += "iiwa14_polytope_collision.urdf";
+    } break;
+    case CollisionType::kMesh: {
+      iiwa_urdf += "iiwa14_mesh_collision.urdf";
+    } break;
+    default:
+      DRAKE_ABORT_MSG("Bad collision type");
+      break;
+  }
+  tree_builder->StoreModel("iiwa", iiwa_urdf);
 
   tree_builder->StoreModel(
       "box",
@@ -59,7 +101,19 @@ std::unique_ptr<RigidBodyTree<double>> build_tree(
   return tree;
 }
 
-void main() {
+int main() {
+  std::cout << "Parameters:\n";
+  std::cout << "\tTime step:        " << FLAGS_timestep << "\n";
+  std::cout << "\tuse_implicit:     " << FLAGS_use_implicit << "\n";
+  std::cout << "\taccuracy:         " << FLAGS_accuracy << "\n";
+  std::cout << "\tSim duration:     " << FLAGS_sim_duration << "\n";
+  std::cout << "\tCollision type:   " << FLAGS_collision_type << "\n";
+  std::cout << "\tStiffness:        " << FLAGS_stiffness << "\n";
+  std::cout << "\tDissipation:      " << FLAGS_dissipation << "\n";
+  std::cout << "\tStatic friction:  " << FLAGS_us << "\n";
+  std::cout << "\tDynamic friction: " << FLAGS_ud << "\n";
+  std::cout << "\tSlip Threshold:   " << FLAGS_v_tol << "\n";
+
   drake::lcm::DrakeLcm lcm;
   std::vector<ModelInstanceInfo<double>> iiwa_info;
   ModelInstanceInfo<double> box_info;
@@ -67,8 +121,23 @@ void main() {
   systems::DiagramBuilder<double>* diagram_builder =
       builder.get_mutable_builder();
 
-  builder.AddPlant(build_tree(&iiwa_info, &box_info));
-  builder.AddVisualizer(&lcm);
+  // Create the iiwas and add them to the diagram
+  RigidBodyPlant<double>* plant;
+  if (FLAGS_collision_type == "polytope") {
+    plant = builder.AddPlant(build_tree(&iiwa_info, &box_info, CollisionType::kPolytope));
+  } else if (FLAGS_collision_type == "mesh") {
+    plant = builder.AddPlant(build_tree(&iiwa_info, &box_info, CollisionType::kMesh));
+  } else {
+    std::cerr << "Invalid collision type '" << FLAGS_collision_type
+              << "'; note that types are case sensitive." << std::endl;
+    return -1;
+  }
+
+  // Contact parameters set arbitrarily.
+  plant->set_normal_contact_parameters(FLAGS_stiffness, FLAGS_dissipation);
+  plant->set_friction_contact_parameters(FLAGS_us, FLAGS_ud, FLAGS_v_tol);
+
+  const auto visualizer_publisher = builder.AddVisualizer(&lcm, true);
 
   std::vector<systems::TrajectorySource<double>*> iiwa_traj_src(iiwa_info.size());
 
@@ -135,9 +204,23 @@ void main() {
   // Simulates.
   std::unique_ptr<systems::Diagram<double>> diagram = builder.Build();
   systems::Simulator<double> simulator(*diagram);
+  auto context = simulator.get_mutable_context();
+  if (FLAGS_use_implicit) {
+    simulator.reset_integrator<ImplicitEulerIntegrator<double>>(*diagram,
+                                                               context);
+    simulator.get_mutable_integrator()->set_maximum_step_size(FLAGS_timestep);
+    simulator.get_mutable_integrator()->set_target_accuracy(FLAGS_accuracy);
+  } else {
+    //simulator.reset_integrator<RungeKutta2Integrator<double>>(*diagram,
+                                                               //FLAGS_timestep,
+                                                               //context);
+  }
   simulator.Initialize();
   simulator.set_target_realtime_rate(1.0);
-  simulator.StepTo(10000000);
+  simulator.StepTo(FLAGS_sim_duration);
+
+  while (FLAGS_playback) visualizer_publisher->ReplayCachedSimulation();
+  return 0;
 }
 
 }  // namespace
@@ -145,8 +228,7 @@ void main() {
 }  // namespace examples
 }  // namespace drake
 
-int main() {
-  drake::examples::kuka_iiwa_arm::main();
-
-  return 0;
+int main(int argc, char* argv[]) {
+  gflags::ParseCommandLineFlags(&argc, &argv, true);
+  return drake::examples::kuka_iiwa_arm::main();
 }
