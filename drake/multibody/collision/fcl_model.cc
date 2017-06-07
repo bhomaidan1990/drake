@@ -100,6 +100,10 @@ bool collisionPointsFunction(fcl::CollisionObjectd* fcl_object_A,
         // convention from FCL)
         Vector3d n_QP = -contact.normal;
         if (element_B->getShape() == DrakeShapes::MESH) {
+          if (element_A->getShape() == DrakeShapes::SPHERE) {
+            // Penetration depth sign convention is reversed for sphere-mesh contact???
+            d_QP = -d_QP;
+          }
           n_QP *= -1;
         }
 
