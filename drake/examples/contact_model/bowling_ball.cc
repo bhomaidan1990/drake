@@ -155,7 +155,7 @@ int main() {
   const double kPinOriginX = FLAGS_pin_distance;
   const double kPinOriginY = 0.5;
   // The pin's geometric origin is 0.109 m above the "bottom" of the pin.
-  const double kPinZ = 0.4;
+  const double kPinZ = 0.12;
   const double kCos60 = std::cos(60.0 / 180 * M_PI) * 12 * 0.0254;
   const double kSin60 = std::sin(60.0 / 180 * M_PI) * 12 * 0.0254;
   const double pins_pos[] = { 0, 0,
