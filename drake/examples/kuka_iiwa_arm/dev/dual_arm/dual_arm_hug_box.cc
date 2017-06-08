@@ -86,7 +86,7 @@ std::unique_ptr<RigidBodyTree<double>> build_tree(
 
   // Box location, box sides is 0.2 0.2 0.2
   id = tree_builder->AddFloatingModelInstance("box",
-      Vector3<double>(0.6, -0.4, 0.26));
+      Vector3<double>(0.6, -0.4, 0.21));
   *box = tree_builder->get_model_info_for_instance(id);
 
   auto tree = tree_builder->Build();
@@ -95,7 +95,7 @@ std::unique_ptr<RigidBodyTree<double>> build_tree(
   // Make a stand for the box.
   Isometry3<double> stand(Isometry3<double>::Identity());
   stand.translation() << 0.6, -0.4, -0.1;
-  const Vector3<double> stand_sides(0.3, 0.3, 0.3);
+  const Vector3<double> stand_sides(0.4, 0.4, 0.3);
   multibody::AddBoxToWorld(stand, stand_sides, "stand", tree.get());
 
   return tree;
@@ -143,13 +143,14 @@ int main() {
 
   // Left arm traj.
   {
-    std::vector<double> times = {0, 2, 4};
+    std::vector<double> times = {0, 1, 2, 3};
     std::vector<MatrixX<double>> knots(times.size(),
                                        MatrixX<double>::Zero(7, 1));
     std::vector<MatrixX<double>> knotsd(times.size(),
                                        MatrixX<double>::Zero(7, 1));
     knots[1] << -21, 102, 90, -24, -10, -65, 0;
     knots[2] << -41, 102, 90, -44, -10, -65, 0;
+    knots[3] << -41, 80, 90, -44, -10, -65, 0;
     for (auto& knot : knots) {
       knot = knot / 180. * M_PI;
     }
@@ -165,13 +166,14 @@ int main() {
 
   // Right arm traj.
   {
-    std::vector<double> times = {0, 2, 4};
+    std::vector<double> times = {0, 1, 2, 3};
     std::vector<MatrixX<double>> knots(times.size(),
                                        MatrixX<double>::Zero(7, 1));
     std::vector<MatrixX<double>> knotsd(times.size(),
                                        MatrixX<double>::Zero(7, 1));
     knots[1] << 21, 102, 90, 24, 10, 65, 0;
     knots[2] << 41, 102, 90, 44, 10, 65, 0;
+    knots[3] << 41, 80, 90, 44, 10, 65, 0;
     for (auto& knot : knots) {
       knot = knot / 180. * M_PI;
     }
