@@ -46,10 +46,13 @@ const RigidBody<double>* Element::get_body() const { return body_; }
 void Element::set_body(const RigidBody<double> *body) { body_ = body; }
 
 bool Element::CanCollideWith(const Element* other) const {
+  // Anchored elements should never be checked against eachother.
+  bool excluded = this->is_anchored() && other->is_anchored();
   // Determines if the elements filter each other via filter *groups*. The
   // pair is *excluded* from consideration if this element's group is ignored
   // by the other, or the other's group is ignored by this element.
-  bool excluded =
+  excluded =
+      excluded ||
       (collision_filter_group_ & other->collision_filter_ignores_).any() ||
       (other->collision_filter_group_ & collision_filter_ignores_).any();
   if (!excluded) {
