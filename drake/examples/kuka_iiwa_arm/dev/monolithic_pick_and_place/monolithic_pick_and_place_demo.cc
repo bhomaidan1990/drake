@@ -144,9 +144,13 @@ std::unique_ptr<systems::RigidBodyPlant<double>> BuildCombinedPlant(
                                                   box_orientation);
   *box_instance = tree_builder->get_model_info_for_instance(box_id);
 
+  auto frame_ee = tree_builder->tree().findFrame("iiwa_frame_ee");
+  auto wsg_frame = frame_ee->Clone(frame_ee->get_mutable_rigid_body());
+  wsg_frame->get_mutable_transform_to_body()->rotate(
+      Eigen::AngleAxisd(-0.39269908, Eigen::Vector3d::UnitY()));
+  wsg_frame->get_mutable_transform_to_body()->translate(0.07*Eigen::Vector3d::UnitY());
   int wsg_id = tree_builder->AddModelInstanceToFrame(
-      "wsg", tree_builder->tree().findFrame("iiwa_frame_ee"),
-      drake::multibody::joints::kFixed);
+      "wsg", wsg_frame, drake::multibody::joints::kFixed);
   *wsg_instance = tree_builder->get_model_info_for_instance(wsg_id);
 
   return std::make_unique<systems::RigidBodyPlant<double>>(
@@ -328,7 +332,7 @@ int DoMain(void) {
   while (state_machine->state(
              sys->GetSubsystemContext(*state_machine,
                                       simulator.get_context()))
-         != pick_and_place::kDone) {
+         != pick_and_place::PickAndPlaceState::kDone) {
     simulator.StepTo(simulator.get_context().get_time() + simulation_step);
     if (FLAGS_quick) {
       // We've run a single step, just get out now since we won't have

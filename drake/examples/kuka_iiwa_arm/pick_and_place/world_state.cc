@@ -10,15 +10,17 @@ namespace kuka_iiwa_arm {
 namespace pick_and_place {
 
 WorldState::WorldState(const std::string& iiwa_model_path,
-                       const std::string& end_effector_name)
-    : iiwa_model_path_(iiwa_model_path),
-      end_effector_name_(end_effector_name) {
+                       const std::string& end_effector_name, int num_tables,
+                       const Vector3<double>& object_dimensions)
+    : iiwa_model_path_(iiwa_model_path), end_effector_name_(end_effector_name), object_dimensions_(object_dimensions){
   iiwa_time_ = -1;
   iiwa_base_ = Isometry3<double>::Identity();
   iiwa_end_effector_pose_ = Isometry3<double>::Identity();
   iiwa_q_ = VectorX<double>::Zero(kIiwaArmNumJoints);
   iiwa_v_ = VectorX<double>::Zero(kIiwaArmNumJoints);
   iiwa_end_effector_vel_.setZero();
+  table_poses_.resize(num_tables, Isometry3<double>::Identity());
+  table_radii_.resize(num_tables, 0.18);
 
   wsg_time_ = -1;
   wsg_q_ = 0;
@@ -94,6 +96,12 @@ void WorldState::HandleObjectStatus(const bot_core::robot_state_t& obj_msg) {
   obj_time_ = obj_msg.utime / 1e6;
   obj_pose_ = DecodePose(obj_msg.pose);
   obj_vel_ = DecodeTwist(obj_msg.twist);
+}
+
+void WorldState::HandleTableStatus(int index, const Isometry3<double>& pose) {
+  DRAKE_THROW_UNLESS(index >= 0 &&
+                     index < static_cast<int>(table_poses_.size()));
+  table_poses_[index] = pose;
 }
 
 }  // namespace pick_and_place

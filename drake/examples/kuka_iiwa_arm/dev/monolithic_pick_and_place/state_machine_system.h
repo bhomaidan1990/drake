@@ -8,7 +8,6 @@
 
 #include "drake/examples/kuka_iiwa_arm/pick_and_place/pick_and_place_state_machine.h"
 #include "drake/examples/kuka_iiwa_arm/pick_and_place/world_state.h"
-#include "drake/manipulation/planner/constraint_relaxing_ik.h"
 #include "drake/multibody/rigid_body_tree.h"
 #include "drake/systems/framework/leaf_system.h"
 #include "drake/systems/framework/system_symbolic_inspector.h"
@@ -37,7 +36,8 @@ class PickAndPlaceStateMachineSystem : public systems::LeafSystem<double> {
       const std::string& iiwa_model_path,
       const std::string& end_effector_name,
       const Isometry3<double>& iiwa_base,
-      const std::vector<Isometry3<double>>& place_locations,
+      int num_tables,
+      const Vector3<double>& box_dimensions,
       const double period_sec = 0.01);
 
   std::unique_ptr<systems::AbstractValues> AllocateAbstractState()
@@ -72,6 +72,16 @@ class PickAndPlaceStateMachineSystem : public systems::LeafSystem<double> {
    */
   const systems::InputPortDescriptor<double>& get_input_port_box_state() const {
     return this->get_input_port(input_port_box_state_);
+  }
+
+  /**
+   * Getter for the input port corresponding to the abstract input with box
+   * state message (LCM `botcore::robot_state_t` message).
+   * @return The corresponding `sytems::InputPortDescriptor`.
+   */
+  const systems::InputPortDescriptor<double>& get_input_port_table_state(int index) const {
+    DRAKE_THROW_UNLESS(index >= 0 && index < static_cast<int>(input_port_table_state_.size()));
+    return this->get_input_port(input_port_table_state_[index]);
   }
 
   /**
@@ -118,6 +128,7 @@ class PickAndPlaceStateMachineSystem : public systems::LeafSystem<double> {
   // Input ports.
   int input_port_iiwa_state_{-1};
   int input_port_box_state_{-1};
+  std::vector<int> input_port_table_state_;
   int input_port_wsg_status_{-1};
   // Output ports.
   int output_port_iiwa_plan_{-1};
@@ -127,10 +138,8 @@ class PickAndPlaceStateMachineSystem : public systems::LeafSystem<double> {
   std::string end_effector_name_;
   const Isometry3<double> iiwa_base_;
 
-  const std::unique_ptr<
-    manipulation::planner::ConstraintRelaxingIk> planner_{nullptr};
-
-  std::vector<Isometry3<double>> place_locations_;
+  const int num_tables_;
+  const Vector3<double> box_dimensions_;
 };
 
 }  // namespace monolithic_pick_and_place

@@ -65,8 +65,9 @@ GTEST_TEST(ConstraintRelaxingIkTest, SolveIkFromFk) {
         iiwa->CalcBodyPoseInWorldFrame(cache, *end_effector);
     waypoints[0].pose = fk_pose;
 
-    bool ret =
-        ik_planner.PlanSequentialTrajectory(waypoints, kQcurrent, &ik_res);
+    bool ret = ik_planner.PlanSequentialTrajectory(
+        waypoints, kQcurrent, kQcurrent, &ik_res);
+
     EXPECT_TRUE(ret);
 
     cache.initialize(ik_res.q_sol[1]);

@@ -44,9 +44,9 @@ class IiwaAndWsgPlantWithStateEstimator : public systems::Diagram<T> {
   /// and the box object respectively.
   IiwaAndWsgPlantWithStateEstimator(
       std::unique_ptr<systems::RigidBodyPlant<T>> combined_plant,
-      const ModelInstanceInfo<T>& iiwa_info,
-      const ModelInstanceInfo<T>& wsg_info,
-      const ModelInstanceInfo<T>& box_info);
+      const std::vector<ModelInstanceInfo<T>>& iiwa_info,
+      const std::vector<ModelInstanceInfo<T>>& wsg_info,
+      const std::vector<ModelInstanceInfo<T>>& box_info);
 
   const systems::RigidBodyPlant<T>& get_plant() const { return *plant_; }
 
@@ -54,38 +54,38 @@ class IiwaAndWsgPlantWithStateEstimator : public systems::Diagram<T> {
     return plant_->get_rigid_body_tree();
   }
 
-  const systems::InputPortDescriptor<T>& get_input_port_iiwa_state_command()
+  const systems::InputPortDescriptor<T>& get_input_port_iiwa_state_command(int index)
       const {
-    return this->get_input_port(input_port_iiwa_state_command_);
+    return this->get_input_port(input_port_iiwa_state_command_.at(index));
   }
 
   const systems::InputPortDescriptor<T>&
-  get_input_port_iiwa_acceleration_command() const {
-    return this->get_input_port(input_port_iiwa_acceleration_command_);
+  get_input_port_iiwa_acceleration_command(int index) const {
+    return this->get_input_port(input_port_iiwa_acceleration_command_.at(index));
   }
 
-  const systems::InputPortDescriptor<T>& get_input_port_wsg_command() const {
-    return this->get_input_port(input_port_wsg_command_);
+  const systems::InputPortDescriptor<T>& get_input_port_wsg_command(int index) const {
+    return this->get_input_port(input_port_wsg_command_.at(index));
   }
 
-  const systems::OutputPort<T>& get_output_port_iiwa_state() const {
-    return this->get_output_port(output_port_iiwa_state_);
+  const systems::OutputPort<T>& get_output_port_iiwa_state(int index) const {
+    return this->get_output_port(output_port_iiwa_state_.at(index));
   }
 
-  const systems::OutputPort<T>& get_output_port_wsg_state() const {
-    return this->get_output_port(output_port_wsg_state_);
+  const systems::OutputPort<T>& get_output_port_wsg_state(int index) const {
+    return this->get_output_port(output_port_wsg_state_.at(index));
   }
 
   const systems::OutputPort<T>& get_output_port_plant_state() const {
     return this->get_output_port(output_port_plant_state_);
   }
 
-  const systems::OutputPort<T>& get_output_port_iiwa_robot_state_msg() const {
-    return this->get_output_port(output_port_iiwa_robot_state_t_);
+  const systems::OutputPort<T>& get_output_port_iiwa_robot_state_msg(int index) const {
+    return this->get_output_port(output_port_iiwa_robot_state_t_.at(index));
   }
 
-  const systems::OutputPort<T>& get_output_port_box_robot_state_msg() const {
-    return this->get_output_port(output_port_box_robot_state_t_);
+  const systems::OutputPort<T>& get_output_port_box_robot_state_msg(int index) const {
+    return this->get_output_port(output_port_box_robot_state_t_.at(index));
   }
 
   const systems::OutputPort<T>& get_output_port_contact_results() const {
@@ -93,21 +93,21 @@ class IiwaAndWsgPlantWithStateEstimator : public systems::Diagram<T> {
   }
 
  private:
-  OracularStateEstimation<T>* iiwa_state_est_{nullptr};
-  OracularStateEstimation<T>* box_state_est_{nullptr};
-  std::unique_ptr<RigidBodyTree<T>> object_{nullptr};
-  systems::controllers::InverseDynamicsController<T>* iiwa_controller_{nullptr};
-  systems::controllers::PidController<T>* wsg_controller_{nullptr};
+  //OracularStateEstimation<T>* iiwa_state_est_{nullptr};
+  //OracularStateEstimation<T>* box_state_est_{nullptr};
+  std::vector<std::unique_ptr<RigidBodyTree<T>>> objects_;
+  //systems::controllers::InverseDynamicsController<T>* iiwa_controller_{nullptr};
+  //systems::controllers::PidController<T>* wsg_controller_{nullptr};
   systems::RigidBodyPlant<T>* plant_{nullptr};
 
-  int input_port_iiwa_state_command_{-1};
-  int input_port_iiwa_acceleration_command_{-1};
-  int input_port_wsg_command_{-1};
-  int output_port_iiwa_state_{-1};
-  int output_port_wsg_state_{-1};
+  std::vector<int> input_port_iiwa_state_command_;
+  std::vector<int> input_port_iiwa_acceleration_command_;
+  std::vector<int> input_port_wsg_command_;
+  std::vector<int> output_port_iiwa_state_;
+  std::vector<int> output_port_wsg_state_;
+  std::vector<int> output_port_iiwa_robot_state_t_;
+  std::vector<int> output_port_box_robot_state_t_;
   int output_port_plant_state_{-1};
-  int output_port_iiwa_robot_state_t_{-1};
-  int output_port_box_robot_state_t_{-1};
   int output_port_contact_results_t_{-1};
 };
 

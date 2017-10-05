@@ -10,6 +10,13 @@ load("//tools:lint.bzl", "add_lint_tests")
 load(":pick_and_place_test.bzl", "pick_and_place_test")
 
 drake_cc_library(
+    name = "optitrack_configuration",
+    hdrs = [
+        "optitrack_configuration.h"
+    ],
+)
+
+drake_cc_library(
     name = "kuka_pick_and_place_monolithic",
     srcs = [
         "state_machine_system.cc",
@@ -23,6 +30,34 @@ drake_cc_library(
         "//drake/multibody:rigid_body_tree",
         "//drake/multibody/parsers",
         "//drake/systems/framework:leaf_system",
+    ],
+)
+
+drake_cc_binary(
+    name = "lcm_pick_and_place_demo",
+    srcs = ["lcm_pick_and_place_demo.cc"],
+    data = [
+        "//drake/examples/kuka_iiwa_arm:models",
+        "//drake/manipulation/models/iiwa_description:models",
+    ],
+    deps = [
+        ":kuka_pick_and_place_monolithic",
+        ":optitrack_configuration",
+        "//drake/common:find_resource",
+        "//drake/common:text_logging_gflags",
+        "//drake/examples/kuka_iiwa_arm:iiwa_common",
+        "//drake/examples/kuka_iiwa_arm:iiwa_lcm",
+        "//drake/lcm",
+        "//drake/lcmtypes:iiwa",
+        "//drake/lcmtypes:schunk",
+        "//drake/manipulation/perception:optitrack_pose_extractor",
+        "//drake/systems/framework:leaf_system",
+        "//drake/systems/lcm",
+        "//drake/systems/lcm:lcm_driven_loop",
+        "//drake/util:lcm_util",
+        "@com_github_gflags_gflags//:gflags",
+        "@lcmtypes_bot2_core",
+        "@lcmtypes_robotlocomotion",
     ],
 )
 
@@ -50,6 +85,37 @@ drake_cc_binary(
         "//drake/systems/analysis:simulator",
         "@com_github_gflags_gflags//:gflags",
         "@lcmtypes_bot2_core",
+    ],
+)
+
+drake_cc_binary(
+    name = "lcm_pick_and_place_simulator",
+    srcs = ["lcm_pick_and_place_simulator.cc"],
+    data = [
+        "//drake/examples/kuka_iiwa_arm:models",
+        "//drake/manipulation/models/iiwa_description:models",
+        "//drake/manipulation/models/wsg_50_description:models",
+    ],
+    deps = [
+        ":kuka_pick_and_place_monolithic",
+        ":optitrack_configuration",
+        "//drake/common:find_resource",
+        "//drake/common:text_logging_gflags",
+        "//drake/examples/kuka_iiwa_arm:iiwa_common",
+        "//drake/examples/kuka_iiwa_arm:iiwa_lcm",
+        "//drake/examples/kuka_iiwa_arm/iiwa_world:iiwa_wsg_diagram_factory",
+        "//drake/lcm",
+        "//drake/lcmtypes:iiwa",
+        "//drake/lcmtypes:viewer",
+        "//drake/manipulation/planner:robot_plan_interpolator",
+        "//drake/manipulation/schunk_wsg:schunk_wsg_controller",
+        "//drake/manipulation/util:world_sim_tree_builder",
+        "//drake/multibody/rigid_body_plant:contact_results_to_lcm",
+        "//drake/multibody/rigid_body_plant:create_load_robot_message",
+        "//drake/systems/analysis:simulator",
+        "@com_github_gflags_gflags//:gflags",
+        "@lcmtypes_bot2_core",
+        "@optitrack_driver//lcmtypes:optitrack_lcmtypes",
     ],
 )
 

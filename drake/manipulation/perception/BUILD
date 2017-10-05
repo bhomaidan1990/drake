@@ -20,6 +20,7 @@ drake_cc_library(
         "//drake/systems/framework",
         "@optitrack_driver//lcmtypes:optitrack_lcmtypes",
     ],
+    visibility = ["//visibility:public"],
 )
 
 drake_cc_library(

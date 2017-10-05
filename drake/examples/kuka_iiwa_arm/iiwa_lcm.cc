@@ -104,8 +104,9 @@ void IiwaCommandSender::OutputCommand(
   const systems::BasicVector<double>* torques =
       this->EvalVectorInput(context, 1);
   if (torques == nullptr) {
-    command.num_torques = 0;
+    command.num_torques = 7;
     command.joint_torque.clear();
+    command.joint_torque.resize(7, 0);
   } else {
     command.num_torques = num_joints_;
     command.joint_torque.resize(num_joints_);
