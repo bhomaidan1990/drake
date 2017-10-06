@@ -33,6 +33,36 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "pick_and_place_planner",
+    hdrs = [
+        "pick_and_place_planner.h",
+    ],
+    srcs = ["pick_and_place_planner.cc"],
+    data = [
+        "//drake/examples/kuka_iiwa_arm:models",
+        "//drake/manipulation/models/iiwa_description:models",
+    ],
+    deps = [
+        ":kuka_pick_and_place_monolithic",
+        ":optitrack_configuration",
+        "//drake/common:find_resource",
+        "//drake/common:text_logging_gflags",
+        "//drake/examples/kuka_iiwa_arm:iiwa_common",
+        "//drake/examples/kuka_iiwa_arm:iiwa_lcm",
+        "//drake/lcm",
+        "//drake/lcmtypes:iiwa",
+        "//drake/lcmtypes:schunk",
+        "//drake/manipulation/perception:optitrack_pose_extractor",
+        "//drake/systems/framework:leaf_system",
+        "//drake/systems/lcm",
+        "//drake/systems/lcm:lcm_driven_loop",
+        "//drake/util:lcm_util",
+        "@com_github_gflags_gflags//:gflags",
+        "@lcmtypes_bot2_core",
+        "@lcmtypes_robotlocomotion",
+    ],
+)
 drake_cc_binary(
     name = "lcm_pick_and_place_demo",
     srcs = ["lcm_pick_and_place_demo.cc"],
