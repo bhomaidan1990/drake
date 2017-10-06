@@ -12,6 +12,7 @@
 #include "drake/examples/kuka_iiwa_arm/dev/monolithic_pick_and_place/state_machine_system.h"
 #include "drake/examples/kuka_iiwa_arm/dev/monolithic_pick_and_place/optitrack_configuration.h"
 #include "drake/examples/kuka_iiwa_arm/dev/monolithic_pick_and_place/default_optitrack_configuration.h"
+#include "drake/examples/kuka_iiwa_arm/dev/monolithic_pick_and_place/pick_and_place_planner.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_common.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/lcmt_schunk_wsg_command.hpp"
@@ -123,8 +124,10 @@ int DoMain(void) {
   const OptitrackConfiguration kOptitrackConfiguration{
       DefaultOptitrackConfiguration()};
 
+  const std::string kTargetName{FLAGS_target};
+
   OptitrackConfiguration::Object target =
-      kOptitrackConfiguration.object(FLAGS_target);
+      kOptitrackConfiguration.object(kTargetName);
 
   lcm::DrakeLcm lcm;
   systems::DiagramBuilder<double> builder;
@@ -141,44 +144,13 @@ int DoMain(void) {
       systems::lcm::LcmSubscriberSystem::Make<lcmt_schunk_wsg_status>(
           "SCHUNK_WSG_STATUS" + suffix, &lcm));
 
-  auto state_machine =
-      builder.AddSystem<PickAndPlaceStateMachineSystem>(
-          FindResourceOrThrow(kIiwaUrdf), kIiwaEndEffectorName,
-          iiwa_base, kOptitrackTableNames.size(), target.dimensions);
+  auto planner = builder.AddSystem<PickAndPlacePlanner>(
+      FindResourceOrThrow(kIiwaUrdf), kIiwaEndEffectorName, kIiwaName,
+      kOptitrackConfiguration, kTargetName, kOptitrackTableNames);
 
   auto optitrack_sub = builder.AddSystem(
       systems::lcm::LcmSubscriberSystem::Make<optitrack::optitrack_frame_t>(
           "OPTITRACK_FRAMES", &lcm));
-
-  const Isometry3<double>& X_WO{kOptitrackConfiguration.optitrack_frame()};
-
-  auto optitrack_obj_pose_extractor =
-      builder.AddSystem<manipulation::perception::OptitrackPoseExtractor>(
-          target.object_id, X_WO, 1. / 120.);
-  optitrack_obj_pose_extractor->set_name("Optitrack object pose extractor");
-
-  auto obj_optitrack_translator =
-      builder.AddSystem<OptitrackTranslatorSystem>();
-  obj_optitrack_translator->set_name("Optitrack object translator");
-
-  auto optitrack_iiwa_pose_extractor =
-      builder.AddSystem<manipulation::perception::OptitrackPoseExtractor>(
-          kOptitrackConfiguration.object(kIiwaName).object_id, X_WO,
-          1. / 120.);
-  optitrack_iiwa_pose_extractor->set_name("Optitrack IIWA base pose extractor");
-
-  auto iiwa_optitrack_translator =
-      builder.AddSystem<OptitrackTranslatorSystem>();
-  iiwa_optitrack_translator->set_name("Optitrack iiwa base translator");
-
-  auto iiwa_state_splicer = builder.AddSystem<RobotStateSplicer>();
-
-  auto iiwa_plan_sender = builder.AddSystem(
-      systems::lcm::LcmPublisherSystem::Make<robot_plan_t>(
-          "COMMITTED_ROBOT_PLAN" + suffix, &lcm));
-  auto wsg_command_sender = builder.AddSystem(
-    systems::lcm::LcmPublisherSystem::Make<lcmt_schunk_wsg_command>(
-        "SCHUNK_WSG_COMMAND" + suffix, &lcm));
 
   builder.Connect(wsg_status_sub->get_output_port(0),
                   state_machine->get_input_port_wsg_status());
