@@ -11,6 +11,7 @@
 #include "drake/common/text_logging_gflags.h"
 #include "drake/examples/kuka_iiwa_arm/dev/monolithic_pick_and_place/state_machine_system.h"
 #include "drake/examples/kuka_iiwa_arm/dev/monolithic_pick_and_place/optitrack_configuration.h"
+#include "drake/examples/kuka_iiwa_arm/dev/monolithic_pick_and_place/default_optitrack_configuration.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_common.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/lcmt_schunk_wsg_command.hpp"
@@ -27,7 +28,7 @@
 #include "drake/systems/lcm/lcm_subscriber_system.h"
 #include "drake/util/lcmUtil.h"
 
-DEFINE_int32(target, 0, "ID of the target to pick.");
+DEFINE_string(target, "big_yellow_robot", "Name of the target to pick.");
 DEFINE_int32(iiwa_index, 0, "ID of the iiwa to use.");
 DEFINE_int32(end_position, -1, "Position index to end at");
 DEFINE_bool(use_channel_suffix, true,
@@ -114,13 +115,16 @@ const char kIiwaUrdf[] =
     "iiwa14_polytope_collision.urdf";
 const char kIiwaEndEffectorName[] = "iiwa_link_ee";
 
-const OptitrackConfiguration kOptitrackConfiguration;
-
 int DoMain(void) {
   std::string suffix =
       (FLAGS_use_channel_suffix) ? "_" + std::to_string(FLAGS_iiwa_index) : "";
-  OptitrackConfiguration::Target target =
-      kOptitrackConfiguration.target(FLAGS_target);
+  const std::string kIiwaName = kOptitrackIiwaBaseNames.at(FLAGS_iiwa_index);
+
+  const OptitrackConfiguration kOptitrackConfiguration{
+      DefaultOptitrackConfiguration()};
+
+  OptitrackConfiguration::Object target =
+      kOptitrackConfiguration.object(FLAGS_target);
 
   lcm::DrakeLcm lcm;
   systems::DiagramBuilder<double> builder;
@@ -140,7 +144,7 @@ int DoMain(void) {
   auto state_machine =
       builder.AddSystem<PickAndPlaceStateMachineSystem>(
           FindResourceOrThrow(kIiwaUrdf), kIiwaEndEffectorName,
-          iiwa_base, kOptitrackConfiguration.num_tables(), target.dimensions);
+          iiwa_base, kOptitrackTableNames.size(), target.dimensions);
 
   auto optitrack_sub = builder.AddSystem(
       systems::lcm::LcmSubscriberSystem::Make<optitrack::optitrack_frame_t>(
@@ -159,7 +163,7 @@ int DoMain(void) {
 
   auto optitrack_iiwa_pose_extractor =
       builder.AddSystem<manipulation::perception::OptitrackPoseExtractor>(
-          kOptitrackConfiguration.iiwa_base(FLAGS_iiwa_index).object_id, X_WO,
+          kOptitrackConfiguration.object(kIiwaName).object_id, X_WO,
           1. / 120.);
   optitrack_iiwa_pose_extractor->set_name("Optitrack IIWA base pose extractor");
 
@@ -198,10 +202,11 @@ int DoMain(void) {
   builder.Connect(iiwa_state_splicer->get_output_port(0),
                   state_machine->get_input_port_iiwa_state());
 
-  for (int i = 0; i < kOptitrackConfiguration.num_tables(); ++i) {
+  for (int i = 0; i < static_cast<int>(kOptitrackTableNames.size()); ++i) {
     auto optitrack_table_pose_extractor =
         builder.AddSystem<manipulation::perception::OptitrackPoseExtractor>(
-            kOptitrackConfiguration.table(i).object_id, X_WO, 1. / 120.);
+            kOptitrackConfiguration.object(kOptitrackTableNames[i]).object_id,
+            X_WO, 1. / 120.);
     optitrack_table_pose_extractor->set_name(
         "Optitrack table " + std::to_string(i) + "  pose extractor");
     builder.Connect(optitrack_sub->get_output_port(0),

@@ -11,6 +11,7 @@
 #include "drake/common/text_logging_gflags.h"
 #include "drake/examples/kuka_iiwa_arm/dev/monolithic_pick_and_place/state_machine_system.h"
 #include "drake/examples/kuka_iiwa_arm/dev/monolithic_pick_and_place/optitrack_configuration.h"
+#include "drake/examples/kuka_iiwa_arm/dev/monolithic_pick_and_place/default_optitrack_configuration.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_common.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_lcm.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_world/iiwa_wsg_diagram_factory.h"
@@ -40,8 +41,8 @@
 DEFINE_double(simulation_sec, std::numeric_limits<double>::infinity(),
               "Number of seconds to simulate.");
 DEFINE_int32(num_iiwas, 2, "Number of IIWA robots to place in the scene.");
-DEFINE_int32(target_1, 1, "ID of the target for arm 1.");
-DEFINE_int32(target_2, 2, "ID of the target for arm 2.");
+DEFINE_string(target_1, "big_yellow_robot", "Name of the target for arm 1.");
+DEFINE_string(target_2, "big_blue_robot", "Name of the target for arm 2.");
 DEFINE_double(orientation_1, 0, "Yaw angle of the first target.");
 DEFINE_double(orientation_2, M_PI_2, "Yaw angle of the second target.");
 DEFINE_int32(start_position_1, 1, "Position index to start from");
@@ -93,7 +94,8 @@ struct Target {
   int object_id;
 };
 
-const OptitrackConfiguration kOptitrackConfiguration;
+const OptitrackConfiguration kOptitrackConfiguration{
+    DefaultOptitrackConfiguration()};
 
 std::unique_ptr<systems::RigidBodyPlant<double>> BuildCombinedPlant(
     const std::vector<Isometry3<double>>& iiwa_poses,
@@ -273,9 +275,9 @@ int DoMain(void) {
                                      FLAGS_start_position_2};
   const double target_orientations[] = {FLAGS_orientation_1,
                                         FLAGS_orientation_2};
-  const OptitrackConfiguration::Target targets[] = {
-      kOptitrackConfiguration.target(FLAGS_target_1),
-      kOptitrackConfiguration.target(FLAGS_target_2)};
+  const OptitrackConfiguration::Object targets[] = {
+      kOptitrackConfiguration.object(FLAGS_target_1),
+      kOptitrackConfiguration.object(FLAGS_target_2)};
 
   std::vector<Isometry3<double>> box_poses;
   std::vector<std::string> target_models;
@@ -338,20 +340,20 @@ int DoMain(void) {
             .FindModelInstanceBodies(iiwa_instances[i].instance_id)
             .front(),
         Isometry3<double>::Identity(),
-        kOptitrackConfiguration.iiwa_base(i).object_id));
+        kOptitrackConfiguration.object(kOptitrackIiwaBaseNames.at(i)).object_id));
     mocap_info.push_back(
         std::make_tuple(plant->get_tree()
                             .FindModelInstanceBodies(box_instances[i].instance_id)
                             .front(),
                         Isometry3<double>::Identity(), targets[i].object_id));
   }
-  for (int i = 0; i < kOptitrackConfiguration.num_tables(); ++i) {
+  for (int i = 0; i < static_cast<int>(kOptitrackTableNames.size()); ++i) {
     mocap_info.push_back(std::make_tuple(
         plant->get_tree()
             .FindModelInstanceBodies(table_instances.at(i).instance_id)
             .front(),
         Isometry3<double>::Identity(),
-        kOptitrackConfiguration.table(i).object_id));
+        kOptitrackConfiguration.object(kOptitrackTableNames[i]).object_id));
   }
 
   Eigen::Isometry3d X_WO = Eigen::Isometry3d::Identity();

@@ -11,8 +11,16 @@ load(":pick_and_place_test.bzl", "pick_and_place_test")
 
 drake_cc_library(
     name = "optitrack_configuration",
+    srcs = [
+        "optitrack_configuration.cc",
+        "default_optitrack_configuration.cc",
+    ],
     hdrs = [
-        "optitrack_configuration.h"
+        "optitrack_configuration.h",
+        "default_optitrack_configuration.h",
+    ],
+    deps = [
+        "//drake/common",
     ],
 )
 
