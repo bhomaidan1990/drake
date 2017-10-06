@@ -129,11 +129,6 @@ int DoMain(void) {
   Isometry3<double> iiwa_base = Isometry3<double>::Identity();
   iiwa_base.translation() = robot_base;
 
-  auto state_machine =
-      builder.AddSystem<PickAndPlaceStateMachineSystem>(
-          FindResourceOrThrow(kIiwaUrdf), kIiwaEndEffectorName,
-          iiwa_base, kOptitrackConfiguration.num_tables(), target.dimensions);
-
   auto iiwa_status_sub = builder.AddSystem(
       systems::lcm::LcmSubscriberSystem::Make<bot_core::robot_state_t>(
           "EST_ROBOT_STATE" + suffix, &lcm));
@@ -141,8 +136,11 @@ int DoMain(void) {
   auto wsg_status_sub = builder.AddSystem(
       systems::lcm::LcmSubscriberSystem::Make<lcmt_schunk_wsg_status>(
           "SCHUNK_WSG_STATUS" + suffix, &lcm));
-  builder.Connect(wsg_status_sub->get_output_port(0),
-                  state_machine->get_input_port_wsg_status());
+
+  auto state_machine =
+      builder.AddSystem<PickAndPlaceStateMachineSystem>(
+          FindResourceOrThrow(kIiwaUrdf), kIiwaEndEffectorName,
+          iiwa_base, kOptitrackConfiguration.num_tables(), target.dimensions);
 
   auto optitrack_sub = builder.AddSystem(
       systems::lcm::LcmSubscriberSystem::Make<optitrack::optitrack_frame_t>(
@@ -154,26 +152,38 @@ int DoMain(void) {
       builder.AddSystem<manipulation::perception::OptitrackPoseExtractor>(
           target.object_id, X_WO, 1. / 120.);
   optitrack_obj_pose_extractor->set_name("Optitrack object pose extractor");
-  builder.Connect(optitrack_sub->get_output_port(0),
-                  optitrack_obj_pose_extractor->get_input_port(0));
 
   auto obj_optitrack_translator =
       builder.AddSystem<OptitrackTranslatorSystem>();
   obj_optitrack_translator->set_name("Optitrack object translator");
-  builder.Connect(optitrack_obj_pose_extractor->get_measured_pose_output_port(),
-                  obj_optitrack_translator->get_input_port(0));
 
   auto optitrack_iiwa_pose_extractor =
       builder.AddSystem<manipulation::perception::OptitrackPoseExtractor>(
           kOptitrackConfiguration.iiwa_base(FLAGS_iiwa_index).object_id, X_WO,
           1. / 120.);
   optitrack_iiwa_pose_extractor->set_name("Optitrack IIWA base pose extractor");
-  builder.Connect(optitrack_sub->get_output_port(0),
-                  optitrack_iiwa_pose_extractor->get_input_port(0));
 
   auto iiwa_optitrack_translator =
       builder.AddSystem<OptitrackTranslatorSystem>();
   iiwa_optitrack_translator->set_name("Optitrack iiwa base translator");
+
+  auto iiwa_state_splicer = builder.AddSystem<RobotStateSplicer>();
+
+  auto iiwa_plan_sender = builder.AddSystem(
+      systems::lcm::LcmPublisherSystem::Make<robot_plan_t>(
+          "COMMITTED_ROBOT_PLAN" + suffix, &lcm));
+  auto wsg_command_sender = builder.AddSystem(
+    systems::lcm::LcmPublisherSystem::Make<lcmt_schunk_wsg_command>(
+        "SCHUNK_WSG_COMMAND" + suffix, &lcm));
+
+  builder.Connect(wsg_status_sub->get_output_port(0),
+                  state_machine->get_input_port_wsg_status());
+  builder.Connect(optitrack_sub->get_output_port(0),
+                  optitrack_obj_pose_extractor->get_input_port(0));
+  builder.Connect(optitrack_obj_pose_extractor->get_measured_pose_output_port(),
+                  obj_optitrack_translator->get_input_port(0));
+  builder.Connect(optitrack_sub->get_output_port(0),
+                  optitrack_iiwa_pose_extractor->get_input_port(0));
   builder.Connect(
       optitrack_iiwa_pose_extractor->get_measured_pose_output_port(),
       iiwa_optitrack_translator->get_input_port(0));
@@ -181,7 +191,6 @@ int DoMain(void) {
   builder.Connect(obj_optitrack_translator->get_output_port(0),
                   state_machine->get_input_port_box_state());
 
-  auto iiwa_state_splicer = builder.AddSystem<RobotStateSplicer>();
   builder.Connect(iiwa_status_sub->get_output_port(0),
                   iiwa_state_splicer->get_input_port_joint_state());
   builder.Connect(iiwa_optitrack_translator->get_output_port(0),
@@ -201,12 +210,6 @@ int DoMain(void) {
                     state_machine->get_input_port_table_state(i));
   }
 
-  auto iiwa_plan_sender = builder.AddSystem(
-      systems::lcm::LcmPublisherSystem::Make<robot_plan_t>(
-          "COMMITTED_ROBOT_PLAN" + suffix, &lcm));
-  auto wsg_command_sender = builder.AddSystem(
-    systems::lcm::LcmPublisherSystem::Make<lcmt_schunk_wsg_command>(
-        "SCHUNK_WSG_COMMAND" + suffix, &lcm));
 
   builder.Connect(state_machine->get_output_port_iiwa_plan(),
                   iiwa_plan_sender->get_input_port(0));
