@@ -1,10 +1,12 @@
 #pragma once
 
+#include "drake/examples/kuka_iiwa_arm/dev/monolithic_pick_and_place/optitrack_configuration.h"
 #include "drake/systems/framework/diagram.h"
 
 namespace drake {
 namespace examples {
 namespace kuka_iiwa_arm {
+namespace monolithic_pick_and_place {
 
 /// A custom `systems::Diagram` composed of a `PickAndPlaceStateMachineSystem`
 /// and `drake::manipulation::OptitrackPoseExtractor` systems.
@@ -12,8 +14,10 @@ class PickAndPlacePlanner : public systems::Diagram<double> {
  public:
   PickAndPlacePlanner(const std::string& model_path,
                       const std::string& end_effector_name,
-                      const Isometry3<double>& iiwa_base, int num_tables,
-                      const Vector3<double>& object_dimensions,
+                      const std::string& iiwa_base_name,
+                      const OptitrackConfiguration& optitrack_configuration,
+                      const std::string& target_name,
+                      const std::vector<std::string>& table_names,
                       const double period_sec = 0.01);
 
   /**
@@ -37,8 +41,8 @@ class PickAndPlacePlanner : public systems::Diagram<double> {
   }
 
   /**
-   * Getter for the input port corresponding to the abstract input with the optitrack
-   * message (LCM `optitrack::optitrack_frame_t` message).
+   * Getter for the input port corresponding to the abstract input with the
+   * optitrack message (LCM `optitrack::optitrack_frame_t` message).
    * @return The corresponding `sytems::InputPortDescriptor`.
    */
   const systems::InputPortDescriptor<double>& get_input_port_optitrack_message()
@@ -46,13 +50,11 @@ class PickAndPlacePlanner : public systems::Diagram<double> {
     return get_input_port(input_port_optitrack_message_);
   }
 
-  const systems::OutputPort<double>& get_output_port_iiwa_plan()
-      const {
+  const systems::OutputPort<double>& get_output_port_iiwa_plan() const {
     return this->get_output_port(output_port_iiwa_plan_);
   }
 
-  const systems::OutputPort<double>& get_output_port_wsg_command()
-      const {
+  const systems::OutputPort<double>& get_output_port_wsg_command() const {
     return this->get_output_port(output_port_wsg_command_);
   }
 
@@ -66,6 +68,7 @@ class PickAndPlacePlanner : public systems::Diagram<double> {
   int output_port_iiwa_plan_{-1};
   int output_port_wsg_command_{-1};
 };
-}  // namespace drake
-}  // namespace examples
+}  // namespace monolithic_pick_and_place
 }  // namespace kuka_iiwa_arm
+}  // namespace examples
+}  // namespace drake
