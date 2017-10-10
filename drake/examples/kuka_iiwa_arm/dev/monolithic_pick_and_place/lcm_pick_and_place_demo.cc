@@ -46,71 +46,6 @@ namespace kuka_iiwa_arm {
 namespace monolithic_pick_and_place {
 namespace {
 
-class OptitrackTranslatorSystem : public systems::LeafSystem<double> {
- public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(OptitrackTranslatorSystem);
-
-  OptitrackTranslatorSystem() {
-    this->DeclareAbstractInputPort(
-        systems::Value<Isometry3<double>>(Isometry3<double>::Identity()));
-    this->DeclareAbstractOutputPort(bot_core::robot_state_t(),
-                                    &OptitrackTranslatorSystem::OutputPose);
-  }
-
- private:
-  void OutputPose(const systems::Context<double>& context,
-                  bot_core::robot_state_t* out) const {
-    const Isometry3<double>& in = this->EvalAbstractInput(
-        context, 0)->template GetValue<Isometry3<double>>();
-
-    out->utime = 0;
-    EncodePose(in, out->pose);
-  }
-};
-
-class RobotStateSplicer : public systems::LeafSystem<double> {
- public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RobotStateSplicer);
-
-  RobotStateSplicer() {
-    input_port_joint_state_ =
-        DeclareAbstractInputPort(
-            systems::Value<bot_core::robot_state_t>(bot_core::robot_state_t()))
-            .get_index();
-    input_port_base_state_ =
-        DeclareAbstractInputPort(
-            systems::Value<bot_core::robot_state_t>(bot_core::robot_state_t()))
-            .get_index();
-    DeclareAbstractOutputPort(bot_core::robot_state_t(),
-                              &RobotStateSplicer::SpliceStates)
-        .get_index();
-  }
-
-  const systems::InputPortDescriptor<double>& get_input_port_joint_state() const {
-    return get_input_port(input_port_joint_state_);
-  }
-
-  const systems::InputPortDescriptor<double>& get_input_port_base_state() const {
-    return get_input_port(input_port_base_state_);
-  }
- private:
-  void SpliceStates(const systems::Context<double>& context,
-                    bot_core::robot_state_t* out) const {
-    const bot_core::robot_state_t& joint_state =
-        this->EvalAbstractInput(context, input_port_joint_state_)
-            ->GetValue<bot_core::robot_state_t>();
-    const bot_core::robot_state_t& base_state =
-        this->EvalAbstractInput(context, input_port_base_state_)
-            ->GetValue<bot_core::robot_state_t>();
-    *out = joint_state;
-    out->pose = base_state.pose;
-    out->twist = base_state.twist;
-  }
-
-  int input_port_joint_state_{-1};
-  int input_port_base_state_{-1};
-};
-
 const char kIiwaUrdf[] =
     "drake/manipulation/models/iiwa_description/urdf/"
     "iiwa14_polytope_collision.urdf";
@@ -119,23 +54,20 @@ const char kIiwaEndEffectorName[] = "iiwa_link_ee";
 int DoMain(void) {
   std::string suffix =
       (FLAGS_use_channel_suffix) ? "_" + std::to_string(FLAGS_iiwa_index) : "";
+
   const std::string kIiwaName = kOptitrackIiwaBaseNames.at(FLAGS_iiwa_index);
 
-  const OptitrackConfiguration kOptitrackConfiguration{
-      DefaultOptitrackConfiguration()};
-
   const std::string kTargetName{FLAGS_target};
-
-  OptitrackConfiguration::Object target =
-      kOptitrackConfiguration.object(kTargetName);
 
   lcm::DrakeLcm lcm;
   systems::DiagramBuilder<double> builder;
 
-  const Eigen::Vector3d robot_base(0, 0, 0);
-  Isometry3<double> iiwa_base = Isometry3<double>::Identity();
-  iiwa_base.translation() = robot_base;
+  // The PickAndPlacePlanner block contains all of the demo logic.
+  auto planner = builder.AddSystem<PickAndPlacePlanner>(
+      FindResourceOrThrow(kIiwaUrdf), kIiwaEndEffectorName, kIiwaName,
+      DefaultOptitrackConfiguration(), kTargetName, kOptitrackTableNames);
 
+  // LCM Subscribers
   auto iiwa_status_sub = builder.AddSystem(
       systems::lcm::LcmSubscriberSystem::Make<bot_core::robot_state_t>(
           "EST_ROBOT_STATE" + suffix, &lcm));
@@ -144,54 +76,31 @@ int DoMain(void) {
       systems::lcm::LcmSubscriberSystem::Make<lcmt_schunk_wsg_status>(
           "SCHUNK_WSG_STATUS" + suffix, &lcm));
 
-  auto planner = builder.AddSystem<PickAndPlacePlanner>(
-      FindResourceOrThrow(kIiwaUrdf), kIiwaEndEffectorName, kIiwaName,
-      kOptitrackConfiguration, kTargetName, kOptitrackTableNames);
-
   auto optitrack_sub = builder.AddSystem(
       systems::lcm::LcmSubscriberSystem::Make<optitrack::optitrack_frame_t>(
           "OPTITRACK_FRAMES", &lcm));
 
+  // LCM Publishers
+  auto iiwa_plan_pub = builder.AddSystem(
+      systems::lcm::LcmPublisherSystem::Make<robot_plan_t>(
+          "COMMITTED_ROBOT_PLAN" + suffix, &lcm));
+  auto wsg_command_pub = builder.AddSystem(
+    systems::lcm::LcmPublisherSystem::Make<lcmt_schunk_wsg_command>(
+        "SCHUNK_WSG_COMMAND" + suffix, &lcm));
+
+  // Connect subscribers to planner input ports.
   builder.Connect(wsg_status_sub->get_output_port(0),
-                  state_machine->get_input_port_wsg_status());
-  builder.Connect(optitrack_sub->get_output_port(0),
-                  optitrack_obj_pose_extractor->get_input_port(0));
-  builder.Connect(optitrack_obj_pose_extractor->get_measured_pose_output_port(),
-                  obj_optitrack_translator->get_input_port(0));
-  builder.Connect(optitrack_sub->get_output_port(0),
-                  optitrack_iiwa_pose_extractor->get_input_port(0));
-  builder.Connect(
-      optitrack_iiwa_pose_extractor->get_measured_pose_output_port(),
-      iiwa_optitrack_translator->get_input_port(0));
-
-  builder.Connect(obj_optitrack_translator->get_output_port(0),
-                  state_machine->get_input_port_box_state());
-
+                  planner->get_input_port_wsg_status());
   builder.Connect(iiwa_status_sub->get_output_port(0),
-                  iiwa_state_splicer->get_input_port_joint_state());
-  builder.Connect(iiwa_optitrack_translator->get_output_port(0),
-                  iiwa_state_splicer->get_input_port_base_state());
-  builder.Connect(iiwa_state_splicer->get_output_port(0),
-                  state_machine->get_input_port_iiwa_state());
+                  planner->get_input_port_iiwa_state());
+  builder.Connect(optitrack_sub->get_output_port(0),
+                  planner->get_input_port_optitrack_message());
 
-  for (int i = 0; i < static_cast<int>(kOptitrackTableNames.size()); ++i) {
-    auto optitrack_table_pose_extractor =
-        builder.AddSystem<manipulation::perception::OptitrackPoseExtractor>(
-            kOptitrackConfiguration.object(kOptitrackTableNames[i]).object_id,
-            X_WO, 1. / 120.);
-    optitrack_table_pose_extractor->set_name(
-        "Optitrack table " + std::to_string(i) + "  pose extractor");
-    builder.Connect(optitrack_sub->get_output_port(0),
-                    optitrack_table_pose_extractor->get_input_port(0));
-    builder.Connect(optitrack_table_pose_extractor->get_output_port(0),
-                    state_machine->get_input_port_table_state(i));
-  }
-
-
-  builder.Connect(state_machine->get_output_port_iiwa_plan(),
-                  iiwa_plan_sender->get_input_port(0));
-  builder.Connect(state_machine->get_output_port_wsg_command(),
-                  wsg_command_sender->get_input_port(0));
+  // Connect publishers to planner output ports.
+  builder.Connect(planner->get_output_port_iiwa_plan(),
+                  iiwa_plan_pub->get_input_port(0));
+  builder.Connect(planner->get_output_port_wsg_command(),
+                  wsg_command_pub->get_input_port(0));
 
   auto sys = builder.Build();
 

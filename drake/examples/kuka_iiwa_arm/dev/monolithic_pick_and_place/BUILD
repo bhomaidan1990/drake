@@ -65,6 +65,7 @@ drake_cc_library(
         "//drake/systems/framework:leaf_system",
         "//drake/systems/lcm",
         "//drake/systems/lcm:lcm_driven_loop",
+        "//drake/systems/primitives:pass_through",
         "//drake/util:lcm_util",
         "@com_github_gflags_gflags//:gflags",
         "@lcmtypes_bot2_core",
@@ -81,6 +82,7 @@ drake_cc_binary(
     deps = [
         ":kuka_pick_and_place_monolithic",
         ":optitrack_configuration",
+        ":pick_and_place_planner",
         "//drake/common:find_resource",
         "//drake/common:text_logging_gflags",
         "//drake/examples/kuka_iiwa_arm:iiwa_common",

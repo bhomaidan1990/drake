@@ -97,8 +97,6 @@ PickAndPlacePlanner::PickAndPlacePlanner(
     const double period_sec) {
   DiagramBuilder<double> builder;
 
-  input_port_optitrack_message_ = this->DeclareAbstractInputPort().get_index();
-
   auto state_machine = builder.AddSystem<PickAndPlaceStateMachineSystem>(
       model_path, end_effector_name, Isometry3<double>::Identity(),
       table_names.size(),
@@ -136,6 +134,8 @@ PickAndPlacePlanner::PickAndPlacePlanner(
                   optitrack_target_pose_extractor->get_input_port(0));
   builder.Connect(optitrack_target_pose_extractor->get_output_port(0),
                   optitrack_target_translator->get_input_port(0));
+  builder.Connect(optitrack_target_translator->get_output_port(0),
+                  state_machine->get_input_port_box_state());
 
   // Connect Optitrack blocks for tables.
   for (int i = 0; i < static_cast<int>(table_names.size()); ++i) {
@@ -175,13 +175,6 @@ PickAndPlacePlanner::PickAndPlacePlanner(
                   iiwa_state_splicer->get_input_port_base_state());
   builder.Connect(iiwa_state_splicer->get_output_port(0),
                   state_machine->get_input_port_iiwa_state());
-
-  auto iiwa_plan_sender = builder.AddSystem(
-      systems::lcm::LcmPublisherSystem::Make<robot_plan_t>(
-          "COMMITTED_ROBOT_PLAN" + suffix, &lcm));
-  auto wsg_command_sender = builder.AddSystem(
-    systems::lcm::LcmPublisherSystem::Make<lcmt_schunk_wsg_command>(
-        "SCHUNK_WSG_COMMAND" + suffix, &lcm));
 
   // Export input port for IIWA status message.
   input_port_iiwa_state_ =
