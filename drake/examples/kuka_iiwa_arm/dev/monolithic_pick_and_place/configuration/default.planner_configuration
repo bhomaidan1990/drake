@@ -1,0 +1,29 @@
+robot_name: "iiwa_0"
+robot_path: "drake/manipulation/models/iiwa_description/urdf/iiwa14_polytope_collision.urdf"
+grasp_frame {
+  body: "iiwa_link_ee"
+}
+target {
+  name: "big_yellow_robot"
+  aabb {
+    size_x: 0.1
+    size_y: 0.035
+    size_z: 0.18
+  }
+}
+table {
+  name: "round_table_1"
+  cylinder {
+    length: 0.02
+    radius: 0.3
+  }
+}
+table {
+  name: "folding_table_1"
+  box {
+    size_x: 0.48
+    size_y: 0.37
+    size_z: 0.02
+  }
+}
+
