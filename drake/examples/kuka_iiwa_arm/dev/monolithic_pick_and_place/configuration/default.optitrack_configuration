@@ -1,0 +1,52 @@
+optitrack_id {
+  key: "cube"
+  value: 3
+}
+optitrack_id {
+  key: "big_yellow_robot"
+  value: 7
+}
+optitrack_id {
+  key: "big_blue_robot"
+  value: 5
+}
+optitrack_id {
+  key: "round_table_1"
+  value: 8
+}
+optitrack_id {
+  key: "round_table_2"
+  value: 9
+}
+optitrack_id {
+  key: "round_table_3"
+  value: 10
+}
+optitrack_id {
+  key: "round_table_4"
+  value: 11
+}
+optitrack_id {
+  key: "folding_table_1"
+  value: 12
+}
+optitrack_id {
+  key: "folding_table_2"
+  value: 13
+}
+optitrack_id {
+  key: "folding_table_3"
+  value: 14
+}
+optitrack_id {
+  key: "folding_table_4"
+  value: 15
+}
+optitrack_id {
+  key: "iiwa_right"
+  value: 1
+}
+optitrack_id {
+  key: "iiwa_right"
+  value: 1
+}

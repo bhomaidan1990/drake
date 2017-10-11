@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package drake.examples.kuka_iiwa_arm.monolithic_pick_and_place;
+package drake.examples.kuka_iiwa_arm.monolithic_pick_and_place.proto;
 
 // Next ID: 7
 message Pose {
@@ -92,8 +92,9 @@ message SimulatorConfiguration {
 }
 
 // Next ID: 2
-/*message  OptitrackConfiguration{*/
-    /*// Map between object names and Optitrack's rigid body ids.*/
-    /*map<string, int32> optitrack_id = 1;*/
-/*}*/
+message  OptitrackConfiguration{
+    // OptitrackConfiguration.RigidBody represents a rigid body as seen by Optitrack
+    // Map between object names and Optitrack's rigid body ids.
+    map<string, int32> optitrack_id = 1;
+}
 

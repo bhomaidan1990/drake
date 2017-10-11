@@ -1,4 +1,4 @@
-robot_name: "iiwa_0"
+robot_name: "iiwa_right"
 robot_path: "drake/manipulation/models/iiwa_description/urdf/iiwa14_polytope_collision.urdf"
 grasp_frame {
   body: "iiwa_link_ee"
@@ -19,7 +19,52 @@ table {
   }
 }
 table {
+  name: "round_table_2"
+  cylinder {
+    length: 0.02
+    radius: 0.3
+  }
+}
+table {
+  name: "round_table_3"
+  cylinder {
+    length: 0.02
+    radius: 0.3
+  }
+}
+table {
+  name: "round_table_4"
+  cylinder {
+    length: 0.02
+    radius: 0.3
+  }
+}
+table {
   name: "folding_table_1"
+  box {
+    size_x: 0.48
+    size_y: 0.37
+    size_z: 0.02
+  }
+}
+table {
+  name: "folding_table_2"
+  box {
+    size_x: 0.48
+    size_y: 0.37
+    size_z: 0.02
+  }
+}
+table {
+  name: "folding_table_3"
+  box {
+    size_x: 0.48
+    size_y: 0.37
+    size_z: 0.02
+  }
+}
+table {
+  name: "folding_table_4"
   box {
     size_x: 0.48
     size_y: 0.37
