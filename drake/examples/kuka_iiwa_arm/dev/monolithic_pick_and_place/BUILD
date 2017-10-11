@@ -8,6 +8,14 @@ load(
 )
 load("//tools:lint.bzl", "add_lint_tests")
 load(":pick_and_place_test.bzl", "pick_and_place_test")
+load("@protobuf//:protobuf.bzl", "cc_proto_library")
+
+cc_proto_library(
+    name = "pick_and_place_configuration_proto",
+    srcs = [
+        "pick_and_place_configuration.proto",
+    ],
+)
 
 drake_cc_library(
     name = "optitrack_configuration",
@@ -76,15 +84,18 @@ drake_cc_binary(
     name = "lcm_pick_and_place_demo",
     srcs = ["lcm_pick_and_place_demo.cc"],
     data = [
+        ":configuration",
         "//drake/examples/kuka_iiwa_arm:models",
         "//drake/manipulation/models/iiwa_description:models",
     ],
     deps = [
         ":kuka_pick_and_place_monolithic",
         ":optitrack_configuration",
+        ":pick_and_place_configuration_proto",
         ":pick_and_place_planner",
         "//drake/common:find_resource",
         "//drake/common:text_logging_gflags",
+        "//drake/common/proto:protobuf",
         "//drake/examples/kuka_iiwa_arm:iiwa_common",
         "//drake/examples/kuka_iiwa_arm:iiwa_lcm",
         "//drake/lcm",

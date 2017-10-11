@@ -4,6 +4,7 @@
 
 #include <gflags/gflags.h>
 #include "bot_core/robot_state_t.hpp"
+#include "google/protobuf/text_format.h"
 #include "optitrack/optitrack_frame_t.hpp"
 #include "robotlocomotion/robot_plan_t.hpp"
 
@@ -29,11 +30,18 @@
 #include "drake/systems/lcm/lcm_subscriber_system.h"
 #include "drake/util/lcmUtil.h"
 
+#include "drake/common/proto/protobuf.h"
+#include "drake/examples/kuka_iiwa_arm/dev/monolithic_pick_and_place/pick_and_place_configuration.pb.h"
+
 DEFINE_string(target, "big_yellow_robot", "Name of the target to pick.");
 DEFINE_int32(iiwa_index, 0, "ID of the iiwa to use.");
 DEFINE_int32(end_position, -1, "Position index to end at");
 DEFINE_bool(use_channel_suffix, true,
             "If true, append a suffix to channel names");
+DEFINE_string(planner_configuration_path,
+              "drake/examples/kuka_iiwa_arm/dev/monolithic_pick_and_place/"
+              "configuration/default.planner_configuration",
+              "Path to the planner configuration file.");
 
 using robotlocomotion::robot_plan_t;
 using DrakeShapes::Geometry;
@@ -62,6 +70,10 @@ int DoMain(void) {
   lcm::DrakeLcm lcm;
   systems::DiagramBuilder<double> builder;
 
+  auto istream =
+      drake::MakeFileInputStreamOrThrow(FindResourceOrThrow(FLAGS_planner_configuration_path));
+  PlannerConfiguration planner_configuration;
+  google::protobuf::TextFormat::Parse(istream.get(), &planner_configuration);
   // The PickAndPlacePlanner block contains all of the demo logic.
   auto planner = builder.AddSystem<PickAndPlacePlanner>(
       FindResourceOrThrow(kIiwaUrdf), kIiwaEndEffectorName, kIiwaName,

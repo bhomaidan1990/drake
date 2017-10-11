@@ -2,13 +2,34 @@ syntax = "proto3";
 
 package drake.examples.kuka_iiwa_arm.monolithic_pick_and_place;
 
-// OptitrackRigidBody is a message that represents a rigid-body tracked by the
-// Optitrack motion-capture system.
-//
+// Next ID: 7
+message Pose {
+    // Position
+    double x = 1;
+    double y = 2;
+    double z = 3;
+    // Orientation in SpaceXYZ Euler angles
+    double roll = 4;
+    double pitch = 5;
+    double yaw = 6;
+}
+
+// Next ID: 3
+message Frame {
+    // Name of the body relative to which the frame is defined.
+    string body = 1;
+    // Relative pose of the frame.
+    Pose X_BF = 2;
+}
+
 // Next ID: 4
-message OptitrackRigidBody {
-    // The identifier assigned to the object in the Optitrack interface.
-    int32 id = 1;
+message Model {
+    // The name of the model. Names should be unique.
+    string name = 1;
+    // The path to the URDF/SDF file that defines the model.
+    string path = 2;
+    // The frame to which the model is attached.
+    Frame weld_to_frame = 3;
 }
 
 // Next ID: 4
@@ -26,55 +47,53 @@ message Cylinder {
     double radius = 2;
 }
 
-// Next ID: 7
-message Pose {
-    // Position
-    double x = 1;
-    double y = 2;
-    double z = 3;
-    // Orientation in SpaceXYZ Euler angles
-    double roll = 4;
-    double pitch = 5;
-    double yaw = 6;
-}
+// Next ID: 6
+message PlannerConfiguration {
+    // The name of the robot arm that picks and places.
+    string robot_name = 1;
 
-// Next ID: 5 
-message Table {
-    // The Optitrack rigid-body for the table
-    OptitrackRigidBody optitrack = 1;
-    oneof geometry {
-        Box box = 2;
-        Cylinder cylinder = 3;
+    // The path to a URDF file describing the robot arm that picks and places.
+    string robot_path = 2;
+
+    // The grasp frame of the end effector.
+    Frame grasp_frame = 3;
+
+    // PickableObject a free-floating object for planning purposes.
+    // Next ID: 3
+    message PickableObject {
+        // The name of the object.
+        string name = 1;
+        // Axis-aligned bounding box centered at the object's origin.
+        Box aabb = 2;
     }
-    // Pose of the table-top center
-    Pose pose = 4;
-}
+    // The object to be picked and placed. The name of 
+    PickableObject target = 4;
 
-// Next ID: 5
-message PickableObject {
-    // The Optitrack rigid-body for the object
-    OptitrackRigidBody optitrack = 1;
-    // The path to a URDF representing the object
-    string model_path = 2;
-    // Axis-aligned bounding box centered at the object's origin.
-    Box aabb = 3;
-    // Pose of the object at the start of simulation
-    Pose initial_pose = 4;
+    // Table represents a table for planning purposes.
+    // Next ID: 4 
+    message Table {
+        // The name of the table. Names should be unique.
+        string name = 1;
+        oneof geometry {
+            Box box = 2;
+            Cylinder cylinder = 3;
+        }
+    }
+    // The tables from/on which the target can be picked/placed.
+    repeated Table table = 5;
 }
 
 // Next ID: 3
-message RobotArm {
-    // The Optitrack rigid-body for the base of the arm
-    OptitrackRigidBody base_optitrack = 1;
-    // Pose of the arm's base frame
-    Pose world_pose = 2;
-
+message SimulatorConfiguration {
+    // The world-fixed models in the scene.
+    repeated Model fixed_model = 1;
+    // The floating models in the scene.
+    repeated Model floating_model = 2;
 }
 
-// OptitrackRigidBodies is a message that stores a number of rigid body
-// definitions
-message  {
-    repeated OptitrackRigidBody rigid_body = 1;
-}
-
+// Next ID: 2
+/*message  OptitrackConfiguration{*/
+    /*// Map between object names and Optitrack's rigid body ids.*/
+    /*map<string, int32> optitrack_id = 1;*/
+/*}*/
 
