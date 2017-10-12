@@ -2,18 +2,6 @@ syntax = "proto3";
 
 package drake.examples.kuka_iiwa_arm.monolithic_pick_and_place.proto;
 
-// Next ID: 7
-message Pose {
-    // Position
-    double x = 1;
-    double y = 2;
-    double z = 3;
-    // Orientation in SpaceXYZ Euler angles
-    double roll = 4;
-    double pitch = 5;
-    double yaw = 6;
-}
-
 // Next ID: 3
 message Frame {
     // Name of the body relative to which the frame is defined.
@@ -22,29 +10,59 @@ message Frame {
     Pose X_BF = 2;
 }
 
+// Next ID: 2
+message OptitrackInfo {
+    int32 id = 1;
+}
+
 // Next ID: 4
 message Model {
-    // The name of the model. Names should be unique.
+    // The name of the model. This should correspond to a key in path_map.
     string name = 1;
-    // The path to the URDF/SDF file that defines the model.
-    string path = 2;
-    // The frame to which the model is attached.
-    Frame weld_to_frame = 3;
+    // The Optitrack information for the model.
+    OptitrackInfo optitrack_info = 2;
+    // The [initial] world-pose of the model base.
+    Pose pose = 3;
 }
 
 // Next ID: 4
-message Box {
-    // Dimensions of the box
-    double size_x = 1;
-    double size_y = 2;
-    double size_z = 3;
+message RobotBase {
+    double base_x = 1;
+    double base_y = 2;
+    OptitrackInfo optitrack_info = 3;
 }
 
-// Next ID: 3
-message Cylinder {
-    // Dimensions of the cylinder
-    double length = 1;
-    double radius = 2;
+// Next ID: 4
+message Geometry {
+    oneof geometry {
+        Box box = 1;
+        Cylinder cylinder = 2;
+    }
+    Pose X_BG = 3;
+
+    // Next ID: 4
+    message Box {
+        // Dimensions of the box
+        double size_x = 1;
+        double size_y = 2;
+        double size_z = 3;
+    }
+
+    // Next ID: 3
+    message Cylinder {
+        // Dimensions of the cylinder
+        double length = 1;
+        double radius = 2;
+    }
+}
+
+// Next ID: 6
+message PickAndPlaceConfiguration {
+    map<string, string> model_path_map = 1;
+    map<string, Geometry> planning_geometry_map = 2;
+    repeated Model table = 3;
+    repeated Model pickable_object = 4;
+    repeated RobotBase robot_base = 5;
 }
 
 // Next ID: 6
