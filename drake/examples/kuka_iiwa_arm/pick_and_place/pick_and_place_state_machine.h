@@ -80,7 +80,7 @@ class PickAndPlaceStateMachine {
   /// is true, the state machine will loop through the pick and place
   /// locations, otherwise it will remain in the kDone state once
   /// complete.
-  PickAndPlaceStateMachine(bool loop);
+  PickAndPlaceStateMachine(bool loop, const std::vector<double>& table_radii);
   ~PickAndPlaceStateMachine();
 
   /// Update the state machine based on the state of the world in @p
@@ -146,6 +146,9 @@ class PickAndPlaceStateMachine {
 
   // Measured location of object at planning time
   Isometry3<double> expected_object_pose_;
+
+  // Radius of the largest inscribed circle on the surface of each table.
+  std::vector<double> table_radii_;
 };
 
 }  // namespace pick_and_place

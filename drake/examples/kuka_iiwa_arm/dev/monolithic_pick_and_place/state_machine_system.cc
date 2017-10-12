@@ -38,11 +38,12 @@ namespace monolithic_pick_and_place {
 
 struct PickAndPlaceStateMachineSystem::InternalState {
   InternalState(const std::string& iiwa_model_path,
-                const std::string& end_effector_name, int num_tables,
+                const std::string& end_effector_name,
+                const std::vector<double>& table_radii,
                 const Vector3<double>& object_dimensions)
-      : world_state(iiwa_model_path, end_effector_name, num_tables,
+      : world_state(iiwa_model_path, end_effector_name, table_radii.size(),
                     object_dimensions),
-        state_machine(num_tables > 1),
+        state_machine(table_radii.size() > 1, table_radii),
         last_iiwa_plan(MakeDefaultIiwaPlan()),
         last_wsg_command(MakeDefaultWsgCommand()) {}
 
@@ -56,18 +57,18 @@ struct PickAndPlaceStateMachineSystem::InternalState {
 
 PickAndPlaceStateMachineSystem::PickAndPlaceStateMachineSystem(
     const std::string& iiwa_model_path, const std::string& end_effector_name,
-    const Isometry3<double>& iiwa_base, int num_tables,
+    const Isometry3<double>& iiwa_base, const std::vector<double> table_radii,
     const Vector3<double>& box_dimensions, const double period_sec)
     : iiwa_model_path_(iiwa_model_path),
       end_effector_name_(end_effector_name),
       iiwa_base_(iiwa_base),
-      num_tables_(num_tables),
+      table_radii_(table_radii),
       box_dimensions_(box_dimensions) {
   input_port_iiwa_state_ = this->DeclareAbstractInputPort().get_index();
   input_port_box_state_ = this->DeclareAbstractInputPort().get_index();
   input_port_wsg_status_ = this->DeclareAbstractInputPort().get_index();
-  input_port_table_state_.resize(num_tables_);
-  for (int i = 0; i < num_tables_; ++i) {
+  input_port_table_state_.resize(num_tables());
+  for (int i = 0; i < num_tables(); ++i) {
     input_port_table_state_[i] = this->DeclareAbstractInputPort().get_index();
   }
 
@@ -94,7 +95,7 @@ PickAndPlaceStateMachineSystem::AllocateAbstractState() const {
   std::vector<std::unique_ptr<systems::AbstractValue>> abstract_vals;
   abstract_vals.push_back(std::unique_ptr<systems::AbstractValue>(
       new systems::Value<InternalState>(
-          InternalState(iiwa_model_path_, end_effector_name_, num_tables_, box_dimensions_))));
+          InternalState(iiwa_model_path_, end_effector_name_, table_radii_, box_dimensions_))));
   return std::make_unique<systems::AbstractValues>(std::move(abstract_vals));
 }
 
@@ -104,7 +105,7 @@ void PickAndPlaceStateMachineSystem::SetDefaultState(
   InternalState& internal_state =
       state->get_mutable_abstract_state<InternalState>(kStateIndex);
   internal_state = InternalState(iiwa_model_path_, end_effector_name_,
-                                 num_tables_, box_dimensions_);
+                                 table_radii_, box_dimensions_);
 }
 
 void PickAndPlaceStateMachineSystem::CalcIiwaPlan(
@@ -148,7 +149,8 @@ void PickAndPlaceStateMachineSystem::DoCalcUnrestrictedUpdate(
   internal_state.world_state.HandleIiwaStatus(iiwa_state);
   internal_state.world_state.HandleWsgStatus(wsg_status);
   internal_state.world_state.HandleObjectStatus(box_state);
-  for (int i = 0; i < num_tables_; ++i) {
+  const int kNumTables{num_tables()};
+  for (int i = 0; i < kNumTables; ++i) {
     const Isometry3<double>& table_state =
         this->EvalAbstractInput(context, input_port_table_state_[i])
             ->GetValue<Isometry3<double>>();

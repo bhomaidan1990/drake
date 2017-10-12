@@ -1,0 +1,122 @@
+model_path {
+  key: "cube"
+  value: "drake/examples/kuka_iiwa_arm/models/objects/simple_cuboid.urdf"
+}
+model_path {
+  key: "big_robot_toy"
+  value: "drake/examples/kuka_iiwa_arm/models/objects/big_robot_toy.urdf"
+} model_path {
+  key: "round_table"
+  value: "drake/examples/kuka_iiwa_arm/models/objects/round_table.urdf"
+}
+model_path {
+  key: "folding_table"
+  value: "drake/examples/kuka_iiwa_arm/models/objects/folding_table.urdf"
+}
+
+planning_geometry {
+  key: "cube"
+  value: {
+    box {
+      size: [0.06, 0.06, 0.06]
+    }
+  }
+}
+planning_geometry {
+  key: "big_robot_toy"
+  value: {
+    box {
+      size: [0.1, 0.035, 0.18]
+    }
+  }
+}
+planning_geometry {
+  key: "round_table"
+  value: {
+    cylinder {
+      length: 0.017
+      radius: 0.3
+    }
+  }
+}
+planning_geometry {
+  key: "folding_table"
+  value: {
+    box {
+      size: [0.48, 0.37, 0.015]
+    }
+  }
+}
+
+table {
+  name: "round_table"
+  optitrack_info {
+    id: 8
+  }
+}
+table {
+  name: "round_table"
+  optitrack_info {
+    id: 9
+  }
+}
+table {
+  name: "round_table"
+  optitrack_info {
+    id: 10
+  }
+}
+table {
+  name: "round_table"
+  optitrack_info {
+    id: 11
+  }
+}
+table {
+  name: "folding_table"
+  optitrack_info {
+    id: 12
+  }
+}
+table {
+  name: "folding_table"
+  optitrack_info {
+    id: 13
+  }
+}
+table {
+  name: "folding_table"
+  optitrack_info {
+    id: 14
+  }
+}
+table {
+  name: "folding_table"
+  optitrack_info {
+    id: 15
+  }
+}
+
+robot_base {
+  base_x: 0.0
+  base_y: 0.0
+  optitrack_info {
+    id: 1
+  }
+}
+
+robot_base {
+  base_x: 0.0
+  base_y: -2.5
+  optitrack_info {
+    id: 6
+  }
+}
+
+object {
+  name: "big_robot_toy"
+  optitrack_info {
+    id: 7
+  }
+}
+

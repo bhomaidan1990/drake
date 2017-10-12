@@ -3,11 +3,11 @@ syntax = "proto3";
 package drake.examples.kuka_iiwa_arm.monolithic_pick_and_place.proto;
 
 // Next ID: 3
-message Frame {
-    // Name of the body relative to which the frame is defined.
-    string body = 1;
-    // Relative pose of the frame.
-    Pose X_BF = 2;
+message Pose {
+    // Position
+    repeated double xyz = 1;
+    // Orientation in SpaceXYZ Euler angles
+    repeated double rpy = 2;
 }
 
 // Next ID: 2
@@ -17,12 +17,32 @@ message OptitrackInfo {
 
 // Next ID: 4
 message Model {
-    // The name of the model. This should correspond to a key in path_map.
+    // The name of the model. This should correspond to a key in path_map
+    // and/or planning_geometry_map.
     string name = 1;
     // The Optitrack information for the model.
     OptitrackInfo optitrack_info = 2;
     // The [initial] world-pose of the model base.
     Pose pose = 3;
+}
+
+// Next ID: 3
+message Geometry {
+    oneof geometry {
+        Box box = 1;
+        Cylinder cylinder = 2;
+    }
+
+    message Box {
+        // Dimensions of the box
+        repeated double size = 1;
+    }
+
+    message Cylinder {
+        // Dimensions of the cylinder
+        double length = 1;
+        double radius = 2;
+    }
 }
 
 // Next ID: 4
@@ -32,86 +52,13 @@ message RobotBase {
     OptitrackInfo optitrack_info = 3;
 }
 
-// Next ID: 4
-message Geometry {
-    oneof geometry {
-        Box box = 1;
-        Cylinder cylinder = 2;
-    }
-    Pose X_BG = 3;
-
-    // Next ID: 4
-    message Box {
-        // Dimensions of the box
-        double size_x = 1;
-        double size_y = 2;
-        double size_z = 3;
-    }
-
-    // Next ID: 3
-    message Cylinder {
-        // Dimensions of the cylinder
-        double length = 1;
-        double radius = 2;
-    }
-}
-
 // Next ID: 6
 message PickAndPlaceConfiguration {
-    map<string, string> model_path_map = 1;
-    map<string, Geometry> planning_geometry_map = 2;
+    map<string, string> model_path = 1;
+    map<string, Geometry> planning_geometry = 2;
+
+    // The tables from/on which the target can be picked/placed.
     repeated Model table = 3;
-    repeated Model pickable_object = 4;
+    repeated Model object = 4;
     repeated RobotBase robot_base = 5;
 }
-
-// Next ID: 6
-message PlannerConfiguration {
-    // The name of the robot arm that picks and places.
-    string robot_name = 1;
-
-    // The path to a URDF file describing the robot arm that picks and places.
-    string robot_path = 2;
-
-    // The grasp frame of the end effector.
-    Frame grasp_frame = 3;
-
-    // PickableObject a free-floating object for planning purposes.
-    // Next ID: 3
-    message PickableObject {
-        // The name of the object.
-        string name = 1;
-        // Axis-aligned bounding box centered at the object's origin.
-        Box aabb = 2;
-    }
-    // The object to be picked and placed. The name of 
-    PickableObject target = 4;
-
-    // Table represents a table for planning purposes.
-    // Next ID: 4 
-    message Table {
-        // The name of the table. Names should be unique.
-        string name = 1;
-        oneof geometry {
-            Box box = 2;
-            Cylinder cylinder = 3;
-        }
-    }
-    // The tables from/on which the target can be picked/placed.
-    repeated Table table = 5;
-}
-
-// Next ID: 3
-message SimulatorConfiguration {
-    // The world-fixed models in the scene.
-    repeated Model fixed_model = 1;
-    // The floating models in the scene.
-    repeated Model floating_model = 2;
-}
-
-// Next ID: 2
-message  OptitrackConfiguration{
-    // Map between object names and Optitrack's rigid body ids.
-    map<string, int32> optitrack_id = 1;
-}
-

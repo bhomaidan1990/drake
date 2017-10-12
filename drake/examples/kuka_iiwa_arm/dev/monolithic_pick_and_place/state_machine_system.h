@@ -36,7 +36,7 @@ class PickAndPlaceStateMachineSystem : public systems::LeafSystem<double> {
       const std::string& iiwa_model_path,
       const std::string& end_effector_name,
       const Isometry3<double>& iiwa_base,
-      int num_tables,
+      const std::vector<double>table_radii,
       const Vector3<double>& box_dimensions,
       const double period_sec = 0.01);
 
@@ -122,6 +122,8 @@ class PickAndPlaceStateMachineSystem : public systems::LeafSystem<double> {
       const systems::Context<double>& context,
       lcmt_schunk_wsg_command* wsg_command) const;
 
+  int num_tables() const { return table_radii_.size(); };
+
   struct InternalState;
 
   RigidBodyTree<double> iiwa_tree_{};
@@ -138,7 +140,7 @@ class PickAndPlaceStateMachineSystem : public systems::LeafSystem<double> {
   std::string end_effector_name_;
   const Isometry3<double> iiwa_base_;
 
-  const int num_tables_;
+  const std::vector<double> table_radii_;
   const Vector3<double> box_dimensions_;
 };
 

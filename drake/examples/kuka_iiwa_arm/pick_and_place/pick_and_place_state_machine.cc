@@ -406,6 +406,7 @@ std::ostream& operator<<(std::ostream& os, const PickAndPlaceState value) {
 
 bool ComputeInitialAndFinalObjectPoses(
     const WorldState& env_state,
+    const std::vector<double>& table_radii,
     std::pair<Isometry3<double>, Isometry3<double>>* X_WO_initial_and_final) {
   // W -- planning World frame, coincides with kuka base frame.
   // S -- Sensor world frame
@@ -472,8 +473,7 @@ bool ComputeInitialAndFinalObjectPoses(
                       X_WT.translation().transpose());
   drake::log()->debug("R_WT = \n{}",
                       X_WT.linear());
-  double destination_table_radius =
-      env_state.get_table_radii().at(destination_table_index);
+  double destination_table_radius = table_radii.at(destination_table_index);
 
   Vector3<double> dir_TO_final = -X_WT.linear().inverse()*r_WT;
   dir_TO_final.z() = 0;
@@ -517,7 +517,7 @@ bool PickAndPlaceStateMachine::ComputeDesiredPoses(
   // E  - End-effector frame
   // G  - Gripper frame
   std::pair<Isometry3<double>, Isometry3<double>> X_WO_initial_and_final;
-  if (!ComputeInitialAndFinalObjectPoses(env_state, &X_WO_initial_and_final)) {
+  if (!ComputeInitialAndFinalObjectPoses(env_state, table_radii_, &X_WO_initial_and_final)) {
     return false;
   }
 
@@ -604,7 +604,7 @@ PickAndPlaceStateMachine::CreatePostureInterpolationRequest(
   return request;
 }
 
-PickAndPlaceStateMachine::PickAndPlaceStateMachine(bool loop)
+PickAndPlaceStateMachine::PickAndPlaceStateMachine(bool loop, const std::vector<double>& table_radii)
     : next_place_location_(0),
       loop_(loop),
       state_(PickAndPlaceState::kOpenGripper),
@@ -614,7 +614,7 @@ PickAndPlaceStateMachine::PickAndPlaceStateMachine(bool loop)
       tight_pos_tol_(0.001, 0.001, 0.001),
       tight_rot_tol_(0.05),
       loose_pos_tol_(0.1, 0.1, 0.1),
-      loose_rot_tol_(30*M_PI/180) {
+      loose_rot_tol_(30*M_PI/180), table_radii_(table_radii) {
 }
 
 PickAndPlaceStateMachine::~PickAndPlaceStateMachine() {}

@@ -1,6 +1,5 @@
 #pragma once
 
-#include "drake/examples/kuka_iiwa_arm/dev/monolithic_pick_and_place/optitrack_configuration.h"
 #include "drake/systems/framework/diagram.h"
 
 namespace drake {
@@ -14,10 +13,11 @@ class PickAndPlacePlanner : public systems::Diagram<double> {
  public:
   PickAndPlacePlanner(const std::string& model_path,
                       const std::string& end_effector_name,
-                      const std::string& iiwa_base_name,
-                      const OptitrackConfiguration& optitrack_configuration,
-                      const std::string& target_name,
-                      const std::vector<std::string>& table_names,
+                      int iiwa_base_optitrack_id,
+                      int target_optitrack_id,
+                      const Vector3<double>& target_dimensions,
+                      const std::vector<int>& table_optitrack_ids,
+                      const std::vector<double>& table_radii,
                       const double period_sec = 0.01);
 
   /**

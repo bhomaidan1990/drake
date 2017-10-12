@@ -9,10 +9,12 @@
 #include "robotlocomotion/robot_plan_t.hpp"
 
 #include "drake/common/find_resource.h"
+#include "drake/common/proto/protobuf.h"
 #include "drake/common/text_logging_gflags.h"
-#include "drake/examples/kuka_iiwa_arm/dev/monolithic_pick_and_place/state_machine_system.h"
-#include "drake/examples/kuka_iiwa_arm/dev/monolithic_pick_and_place/optitrack_configuration.h"
+#include "drake/common/eigen_types.h"
 #include "drake/examples/kuka_iiwa_arm/dev/monolithic_pick_and_place/pick_and_place_planner.h"
+#include "drake/examples/kuka_iiwa_arm/dev/monolithic_pick_and_place/state_machine_system.h"
+#include "drake/examples/kuka_iiwa_arm/dev/monolithic_pick_and_place/pick_and_place_configuration.pb.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_common.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/lcmt_schunk_wsg_command.hpp"
@@ -29,33 +31,29 @@
 #include "drake/systems/lcm/lcm_subscriber_system.h"
 #include "drake/util/lcmUtil.h"
 
-#include "drake/common/proto/protobuf.h"
-#include "drake/examples/kuka_iiwa_arm/dev/monolithic_pick_and_place/pick_and_place_configuration.pb.h"
-
-DEFINE_string(target, "big_yellow_robot", "Name of the target to pick.");
-DEFINE_int32(iiwa_index, 0, "ID of the iiwa to use.");
+DEFINE_int32(target, 0, "Index of the target to pick.");
+DEFINE_int32(iiwa_index, 0, "Index of the iiwa to use.");
 DEFINE_int32(end_position, -1, "Position index to end at");
 DEFINE_bool(use_channel_suffix, true,
             "If true, append a suffix to channel names");
-DEFINE_string(planner_configuration_path,
+DEFINE_string(configuration_file,
               "drake/examples/kuka_iiwa_arm/dev/monolithic_pick_and_place/"
-              "configuration/default.planner_configuration",
-              "Path to the planner configuration file.");
-DEFINE_string(optitrack_configuration_path,
-              "drake/examples/kuka_iiwa_arm/dev/monolithic_pick_and_place/"
-              "configuration/default.optitrack_configuration",
-              "Path to the optitrack configuration file.");
+              "configuration/default.pick_and_place_configuration",
+              "Path to the configuration file.");
 
-using robotlocomotion::robot_plan_t;
 using DrakeShapes::Geometry;
-using drake::examples::kuka_iiwa_arm::monolithic_pick_and_place::
-    OptitrackConfiguration;
+using robotlocomotion::robot_plan_t;
 
 namespace drake {
 namespace examples {
 namespace kuka_iiwa_arm {
 namespace monolithic_pick_and_place {
 namespace {
+
+const char kIiwaUrdf[] =
+    "drake/manipulation/models/iiwa_description/urdf/"
+    "iiwa14_polytope_collision.urdf";
+const char kIiwaEndEffectorName[] = "iiwa_link_ee";
 
 int DoMain(void) {
   std::string suffix =
@@ -64,37 +62,81 @@ int DoMain(void) {
   lcm::DrakeLcm lcm;
   systems::DiagramBuilder<double> builder;
 
-  // Parse configuration file for planner.
+  // Parse configuration file
   auto istream = drake::MakeFileInputStreamOrThrow(
-      FindResourceOrThrow(FLAGS_planner_configuration_path));
-  proto::PlannerConfiguration planner_configuration;
-  google::protobuf::TextFormat::Parse(istream.get(), &planner_configuration);
+      FindResourceOrThrow(FLAGS_configuration_file));
+  proto::PickAndPlaceConfiguration configuration;
+  google::protobuf::TextFormat::Parse(istream.get(), &configuration);
 
-  std::vector<std::string> table_names(planner_configuration.table().size());
-  std::transform(
-      planner_configuration.table().begin(),
-      planner_configuration.table().end(), table_names.begin(),
-      [](const proto::PlannerConfiguration::Table& table) -> std::string {
-        return table.name();
-      });
+  // Extract Optitrack Ids for tables
+  std::vector<int> table_optitrack_ids;
+  std::transform(configuration.table().begin(), configuration.table().end(),
+                 std::back_inserter(table_optitrack_ids),
+                 [](const proto::Model& model) -> int {
+                   return model.optitrack_info().id();
+                 });
 
-  // Parse configuration file for Optitrack.
-  istream = drake::MakeFileInputStreamOrThrow(
-      FindResourceOrThrow(FLAGS_optitrack_configuration_path));
-  proto::OptitrackConfiguration optitrack_configuration;
-  google::protobuf::TextFormat::Parse(istream.get(), &optitrack_configuration);
+  // Extract table radii
+  std::vector<double> table_radii;
+  std::transform(configuration.table().begin(), configuration.table().end(),
+                 std::back_inserter(table_radii),
+                 [&configuration](const proto::Model& model) -> double {
+                   DRAKE_THROW_UNLESS(
+                       configuration.planning_geometry().find(model.name()) !=
+                       configuration.planning_geometry().end());
+                   const proto::Geometry& geometry =
+                       configuration.planning_geometry().at(model.name());
+                   double radius{};
+                   switch (geometry.geometry_case()) {
+                     case proto::Geometry::kBox: {
+                       radius = *std::min_element(geometry.box().size().begin(),
+                                                  geometry.box().size().end());
+                     } break;
+                     case proto::Geometry::kCylinder: {
+                       radius = geometry.cylinder().radius();
+                     } break;
+                     case proto::Geometry::GEOMETRY_NOT_SET: {
+                       DRAKE_THROW_UNLESS(geometry.geometry_case() !=
+                                          proto::Geometry::GEOMETRY_NOT_SET);
+                     }
+                   }
+                   return radius;
+                 });
 
-  OptitrackConfiguration optitrack{};
-  for (const auto& object : optitrack_configuration.optitrack_id()) {
-    optitrack.AddObject(object.first, object.second);
+  // Extract IIWA Optitrack ID
+  const int iiwa_optitrack_id =
+      configuration.robot_base(FLAGS_iiwa_index).optitrack_info().id();
+
+  // Extract target Optitrack ID
+  const proto::Model& target = configuration.object(FLAGS_target);
+  const int target_optitrack_id = target.optitrack_info().id();
+
+  // Extract target dimensions
+  DRAKE_THROW_UNLESS(configuration.planning_geometry().find(target.name()) !=
+                     configuration.planning_geometry().end());
+  Vector3<double> target_dimensions;
+  const proto::Geometry& target_geometry =
+      configuration.planning_geometry().at(target.name());
+  switch (target_geometry.geometry_case()) {
+    case proto::Geometry::kBox: {
+      const proto::Geometry::Box& box = target_geometry.box();
+      target_dimensions = Vector3<double>(box.size(0), box.size(1), box.size(2));
+    } break;
+    case proto::Geometry::kCylinder: {
+      proto::Geometry::Cylinder cylinder = target_geometry.cylinder();
+      target_dimensions = Vector3<double>(
+          2 * cylinder.radius(), 2 * cylinder.radius(), cylinder.length());
+    } break;
+    case proto::Geometry::GEOMETRY_NOT_SET: {
+      DRAKE_THROW_UNLESS(target_geometry.geometry_case() !=
+                         proto::Geometry::GEOMETRY_NOT_SET);
+    }
   }
 
   // The PickAndPlacePlanner block contains all of the demo logic.
   auto planner = builder.AddSystem<PickAndPlacePlanner>(
-      FindResourceOrThrow(planner_configuration.robot_path()),
-      planner_configuration.grasp_frame().body(),
-      planner_configuration.robot_name(), optitrack,
-      planner_configuration.target().name(), table_names);
+      FindResourceOrThrow(kIiwaUrdf), kIiwaEndEffectorName, iiwa_optitrack_id,
+      target_optitrack_id, target_dimensions, table_optitrack_ids, table_radii);
 
   // LCM Subscribers
   auto iiwa_status_sub = builder.AddSystem(

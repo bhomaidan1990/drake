@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<robot name="round_table">
+<robot name="folding_table">
   <link name="table_surface_center"/>
   <link name="table_top">
     <inertial>
@@ -8,21 +8,21 @@
     </inertial>
     <visual>
       <geometry>
-        <cylinder length="0.017" radius="0.30" />
+        <box size="0.48 0.37 0.015"/>
       </geometry>
-      <material name="White">
-        <color rgba="0.9 0.9 0.9 1.0"/>
+      <material name="Black">
+        <color rgba="0.1 0.1 0.1 1.0"/>
       </material>
     </visual>
     <collision>
       <geometry>
-        <cylinder length="0.017" radius="0.30" />
+        <box size="0.48 0.37 0.015"/>
       </geometry>
     </collision>
    </link>
    <joint name="table_top_joint" type="fixed">
-     <origin xyz="0 0 -0.0085"/>
+     <origin xyz="0 0 -0.0075"/>
      <parent link="table_surface_center"/>
-     <child link="table_top"/>
+     <child link="table_top">
    </joint>
 </robot>
