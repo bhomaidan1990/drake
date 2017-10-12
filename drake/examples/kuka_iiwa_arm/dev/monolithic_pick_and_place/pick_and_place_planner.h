@@ -11,14 +11,18 @@ namespace monolithic_pick_and_place {
 /// and `drake::manipulation::OptitrackPoseExtractor` systems.
 class PickAndPlacePlanner : public systems::Diagram<double> {
  public:
-  PickAndPlacePlanner(const std::string& model_path,
-                      const std::string& end_effector_name,
-                      int iiwa_base_optitrack_id,
-                      int target_optitrack_id,
-                      const Vector3<double>& target_dimensions,
-                      const std::vector<int>& table_optitrack_ids,
-                      const std::vector<double>& table_radii,
-                      const double period_sec = 0.01);
+  struct Configuration {
+    std::string model_path;
+    std::string end_effector_name;
+    int iiwa_base_optitrack_id{};
+    int target_optitrack_id{};
+    Vector3<double> target_dimensions;
+    std::vector<int> table_optitrack_ids;
+    std::vector<double> table_radii;
+    double period_sec{0.01};
+  };
+
+  PickAndPlacePlanner(const Configuration& configuration);
 
   /**
    * Getter for the input port corresponding to the abstract input with iiwa
