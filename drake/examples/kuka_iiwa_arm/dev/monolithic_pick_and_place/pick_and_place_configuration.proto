@@ -93,7 +93,6 @@ message SimulatorConfiguration {
 
 // Next ID: 2
 message  OptitrackConfiguration{
-    // OptitrackConfiguration.RigidBody represents a rigid body as seen by Optitrack
     // Map between object names and Optitrack's rigid body ids.
     map<string, int32> optitrack_id = 1;
 }
