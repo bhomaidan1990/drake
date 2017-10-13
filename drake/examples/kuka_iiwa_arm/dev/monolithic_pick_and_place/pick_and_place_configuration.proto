@@ -52,13 +52,18 @@ message RobotBase {
     OptitrackInfo optitrack_info = 3;
 }
 
-// Next ID: 6
+// Next ID: 8
 message PickAndPlaceConfiguration {
     map<string, string> model_path = 1;
     map<string, Geometry> planning_geometry = 2;
 
     // The tables from/on which the target can be picked/placed.
     repeated Model table = 3;
+    // The objects that can be picked and placed
     repeated Model object = 4;
+    // The bases of the robots that pick and place
     repeated RobotBase robot_base = 5;
+
+    string planning_model_path = 6;
+    string planning_end_effector_name = 7;
 }

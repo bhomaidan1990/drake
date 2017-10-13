@@ -14,7 +14,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/examples/kuka_iiwa_arm/dev/monolithic_pick_and_place/pick_and_place_planner.h"
 #include "drake/examples/kuka_iiwa_arm/dev/monolithic_pick_and_place/state_machine_system.h"
-#include "drake/examples/kuka_iiwa_arm/dev/monolithic_pick_and_place/pick_and_place_configuration.pb.h"
+#include "drake/examples/kuka_iiwa_arm/dev/monolithic_pick_and_place/pick_and_place_configuration_parsing.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_common.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/lcmt_schunk_wsg_command.hpp"
@@ -50,11 +50,6 @@ namespace kuka_iiwa_arm {
 namespace monolithic_pick_and_place {
 namespace {
 
-const char kIiwaUrdf[] =
-    "drake/manipulation/models/iiwa_description/urdf/"
-    "iiwa14_polytope_collision.urdf";
-const char kIiwaEndEffectorName[] = "iiwa_link_ee";
-
 int DoMain(void) {
   std::string suffix =
       (FLAGS_use_channel_suffix) ? "_" + std::to_string(FLAGS_iiwa_index) : "";
@@ -63,75 +58,9 @@ int DoMain(void) {
   systems::DiagramBuilder<double> builder;
 
   // Parse configuration file
-  PickAndPlacePlanner::Configuration planner_configuration;
-  auto istream = drake::MakeFileInputStreamOrThrow(
-      FindResourceOrThrow(FLAGS_configuration_file));
-  proto::PickAndPlaceConfiguration configuration;
-  google::protobuf::TextFormat::Parse(istream.get(), &configuration);
-
-  // Extract Optitrack Ids for tables
-  std::transform(configuration.table().begin(), configuration.table().end(),
-                 std::back_inserter(planner_configuration.table_optitrack_ids),
-                 [](const proto::Model& model) -> int {
-                   return model.optitrack_info().id();
-                 });
-
-  // Extract table radii
-  std::transform(configuration.table().begin(), configuration.table().end(),
-                 std::back_inserter(planner_configuration.table_radii),
-                 [&configuration](const proto::Model& model) -> double {
-                   DRAKE_THROW_UNLESS(
-                       configuration.planning_geometry().find(model.name()) !=
-                       configuration.planning_geometry().end());
-                   const proto::Geometry& geometry =
-                       configuration.planning_geometry().at(model.name());
-                   double radius{};
-                   switch (geometry.geometry_case()) {
-                     case proto::Geometry::kBox: {
-                       radius = *std::min_element(geometry.box().size().begin(),
-                                                  geometry.box().size().end());
-                     } break;
-                     case proto::Geometry::kCylinder: {
-                       radius = geometry.cylinder().radius();
-                     } break;
-                     case proto::Geometry::GEOMETRY_NOT_SET: {
-                       DRAKE_THROW_UNLESS(geometry.geometry_case() !=
-                                          proto::Geometry::GEOMETRY_NOT_SET);
-                     }
-                   }
-                   return radius;
-                 });
-
-  // Extract IIWA Optitrack ID
-  planner_configuration.iiwa_base_optitrack_id =
-      configuration.robot_base(FLAGS_iiwa_index).optitrack_info().id();
-
-  // Extract target Optitrack ID
-  const proto::Model& target = configuration.object(FLAGS_target);
-  planner_configuration.target_optitrack_id = target.optitrack_info().id();
-
-  // Extract target dimensions
-  DRAKE_THROW_UNLESS(configuration.planning_geometry().find(target.name()) !=
-                     configuration.planning_geometry().end());
-  const proto::Geometry& target_geometry =
-      configuration.planning_geometry().at(target.name());
-  switch (target_geometry.geometry_case()) {
-    case proto::Geometry::kBox: {
-      const proto::Geometry::Box& box = target_geometry.box();
-      planner_configuration.target_dimensions = Vector3<double>(box.size(0), box.size(1), box.size(2));
-    } break;
-    case proto::Geometry::kCylinder: {
-      proto::Geometry::Cylinder cylinder = target_geometry.cylinder();
-      planner_configuration.target_dimensions = Vector3<double>(
-          2 * cylinder.radius(), 2 * cylinder.radius(), cylinder.length());
-    } break;
-    case proto::Geometry::GEOMETRY_NOT_SET: {
-      DRAKE_THROW_UNLESS(target_geometry.geometry_case() !=
-                         proto::Geometry::GEOMETRY_NOT_SET);
-    }
-  }
-  planner_configuration.model_path = FindResourceOrThrow(kIiwaUrdf);
-  planner_configuration.end_effector_name = kIiwaEndEffectorName;
+  PlannerConfiguration planner_configuration = ParsePlannerConfigurationOrThrow(
+      FindResourceOrThrow(FLAGS_configuration_file),
+      RobotBaseIndex(FLAGS_iiwa_index), TargetIndex(FLAGS_target));
 
   // The PickAndPlacePlanner block contains all of the demo logic.
   auto planner = builder.AddSystem<PickAndPlacePlanner>(planner_configuration);

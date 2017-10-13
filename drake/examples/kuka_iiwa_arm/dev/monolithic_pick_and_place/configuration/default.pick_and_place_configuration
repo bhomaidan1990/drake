@@ -120,3 +120,6 @@ object {
   }
 }
 
+planning_model_path: "drake/manipulation/models/iiwa_description/urdf/iiwa14_polytope_collision.urdf";
+
+planning_end_effector_name: "iiwa_link_ee";
