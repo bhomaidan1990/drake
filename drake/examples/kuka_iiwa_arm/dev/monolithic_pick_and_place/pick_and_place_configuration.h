@@ -21,6 +21,14 @@ struct PlannerConfiguration {
   double period_sec{0.01};
 };
 
+struct SimulatedPlantConfiguration {
+  std::vector<Vector2<double>> base_xy_positions;
+  std::vector<std::string> table_models;
+  std::vector<Isometry3<double>> table_poses;
+  std::vector<std::string> object_models;
+  std::vector<Isometry3<double>> object_poses;
+};
+
 }  // namespace monolithic_pick_and_place
 }  // namespace kuka_iiwa_arm
 }  // namespace examples

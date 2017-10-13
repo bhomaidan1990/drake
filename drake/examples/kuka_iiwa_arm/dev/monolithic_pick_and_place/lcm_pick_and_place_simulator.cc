@@ -12,6 +12,8 @@
 #include "drake/examples/kuka_iiwa_arm/dev/monolithic_pick_and_place/state_machine_system.h"
 #include "drake/examples/kuka_iiwa_arm/dev/monolithic_pick_and_place/optitrack_configuration.h"
 #include "drake/examples/kuka_iiwa_arm/dev/monolithic_pick_and_place/default_optitrack_configuration.h"
+#include "drake/examples/kuka_iiwa_arm/dev/monolithic_pick_and_place/pick_and_place_configuration.h"
+#include "drake/examples/kuka_iiwa_arm/dev/monolithic_pick_and_place/pick_and_place_configuration_parsing.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_common.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_lcm.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_world/iiwa_wsg_diagram_factory.h"
@@ -52,6 +54,10 @@ DEFINE_double(realtime_rate, 1.0, "Rate at which to run the simulation, "
     "relative to realtime");
 DEFINE_bool(quick, false, "Run only a brief simulation and return success "
     "without executing the entire task");
+DEFINE_string(configuration_file,
+              "drake/examples/kuka_iiwa_arm/dev/monolithic_pick_and_place/"
+              "configuration/default.pick_and_place_configuration",
+              "Path to the configuration file.");
 
 using robotlocomotion::robot_plan_t;
 
@@ -236,6 +242,10 @@ class MockOptitrackSystem : public systems::LeafSystem<double> {
 };
 
 int DoMain(void) {
+  // Parse configuration file
+  const SimulatedPlantConfiguration plant_configuration =
+      ParseSimulatedPlantConfigurationOrThrow(FLAGS_configuration_file);
+
   // Locations for the tables
   std::vector<Eigen::Vector3d> round_table_locations;
   double kTallTableHeight{0.91 - kTableTopZInWorld};

@@ -2,8 +2,8 @@
 
 #include <string>
 
-#include "drake/examples/kuka_iiwa_arm/dev/monolithic_pick_and_place/pick_and_place_configuration.h"
 #include "drake/common/type_safe_index.h"
+#include "drake/examples/kuka_iiwa_arm/dev/monolithic_pick_and_place/pick_and_place_configuration.h"
 
 namespace drake {
 namespace examples {
@@ -16,6 +16,9 @@ using TargetIndex = TypeSafeIndex<class TargetTag>;
 PlannerConfiguration ParsePlannerConfigurationOrThrow(
     std::string filename, RobotBaseIndex robot_base_index = RobotBaseIndex(0),
     TargetIndex target_index = TargetIndex(0));
+
+SimulatedPlantConfiguration ParseSimulatedPlantConfigurationOrThrow(
+    const std::string& filename);
 
 }  // namespace monolithic_pick_and_place
 }  // namespace kuka_iiwa_arm

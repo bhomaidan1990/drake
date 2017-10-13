@@ -38,7 +38,9 @@ drake_cc_library(
     deps = [
         ":pick_and_place_configuration",
         ":pick_and_place_configuration_proto",
+        "//drake/common:find_resource",
         "//drake/common/proto:protobuf",
+        "//drake/math:geometric_transform",
     ],
 )
 
@@ -176,6 +178,7 @@ drake_cc_binary(
     deps = [
         ":kuka_pick_and_place_monolithic",
         ":optitrack_configuration",
+        ":pick_and_place_configuration_parsing",
         "//drake/common:find_resource",
         "//drake/common:text_logging_gflags",
         "//drake/examples/kuka_iiwa_arm:iiwa_common",

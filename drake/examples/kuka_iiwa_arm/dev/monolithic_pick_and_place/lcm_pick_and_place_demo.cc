@@ -59,8 +59,8 @@ int DoMain(void) {
 
   // Parse configuration file
   PlannerConfiguration planner_configuration = ParsePlannerConfigurationOrThrow(
-      FindResourceOrThrow(FLAGS_configuration_file),
-      RobotBaseIndex(FLAGS_iiwa_index), TargetIndex(FLAGS_target));
+      FLAGS_configuration_file, RobotBaseIndex(FLAGS_iiwa_index),
+      TargetIndex(FLAGS_target));
 
   // The PickAndPlacePlanner block contains all of the demo logic.
   auto planner = builder.AddSystem<PickAndPlacePlanner>(planner_configuration);
