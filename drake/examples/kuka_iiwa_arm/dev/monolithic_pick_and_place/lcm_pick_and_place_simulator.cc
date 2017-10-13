@@ -10,8 +10,6 @@
 #include "drake/common/find_resource.h"
 #include "drake/common/text_logging_gflags.h"
 #include "drake/examples/kuka_iiwa_arm/dev/monolithic_pick_and_place/state_machine_system.h"
-#include "drake/examples/kuka_iiwa_arm/dev/monolithic_pick_and_place/optitrack_configuration.h"
-#include "drake/examples/kuka_iiwa_arm/dev/monolithic_pick_and_place/default_optitrack_configuration.h"
 #include "drake/examples/kuka_iiwa_arm/dev/monolithic_pick_and_place/pick_and_place_configuration.h"
 #include "drake/examples/kuka_iiwa_arm/dev/monolithic_pick_and_place/pick_and_place_configuration_parsing.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_common.h"
@@ -88,28 +86,11 @@ const char kIiwaUrdf[] =
 // 0.736 + 0.057 / 2.
 const double kTableTopZInWorld = 0.736 + 0.057 / 2;
 
-// Coordinates for kRobotBase originally from iiwa_world_demo.cc.
-// The intention is to center the robot on the table.
-const Eigen::Vector3d kRobotBase(0, 0, kTableTopZInWorld);
-const Eigen::Vector3d kTableBase(0, 0, 0.);
-
-struct Target {
-  std::string model_name;
-  Eigen::Vector3d dimensions;
-  int object_id;
-};
-
-const OptitrackConfiguration kOptitrackConfiguration{
-    DefaultOptitrackConfiguration()};
-
 std::unique_ptr<systems::RigidBodyPlant<double>> BuildCombinedPlant(
-    const std::vector<Isometry3<double>>& iiwa_poses,
-    const std::vector<Vector3<double>>& round_table_positions,
-    const std::vector<std::string>& target_models,
-    const std::vector<Isometry3<double>>& box_poses,
+    const SimulatedPlantConfiguration& configuration,
     std::vector<ModelInstanceInfo<double>>* iiwa_instances,
     std::vector<ModelInstanceInfo<double>>* wsg_instances,
-    std::vector<ModelInstanceInfo<double>>* box_instances,
+    std::vector<ModelInstanceInfo<double>>* object_instances,
     std::vector<ModelInstanceInfo<double>>* table_instances) {
   auto tree_builder = std::make_unique<WorldSimTreeBuilder<double>>();
 
@@ -119,40 +100,34 @@ std::unique_ptr<systems::RigidBodyPlant<double>> BuildCombinedPlant(
   tree_builder->StoreModel("table",
                            "drake/examples/kuka_iiwa_arm/models/table/"
                            "extra_heavy_duty_table_surface_only_collision.sdf");
-  for (int i = 0; i < static_cast<int>(target_models.size()); ++i) {
-    tree_builder->StoreModel(
-        "target_" + std::to_string(i),
-        "drake/examples/kuka_iiwa_arm/models/objects/" + target_models[i]);
-  }
-  tree_builder->StoreModel("round_table",
-                           "drake/examples/kuka_iiwa_arm/models/objects/"
-                           "round_table.urdf");
   tree_builder->StoreModel(
       "wsg",
       "drake/manipulation/models/wsg_50_description"
       "/sdf/schunk_wsg_50_ball_contact.sdf");
+  for (int i = 0; i < static_cast<int>(configuration.object_models.size()); ++i) {
+    tree_builder->StoreModel("object_" + std::to_string(i), configuration.object_models[i]);
+  }
+  for (int i = 0; i < static_cast<int>(configuration.table_models.size()); ++i) {
+    tree_builder->StoreModel("table_" + std::to_string(i), configuration.table_models[i]);
+  }
 
-  // The round tables that the objects sit on.
-  for (const Vector3<double>& round_table_position : round_table_positions) {
-    Vector3<double> r_WT = round_table_position + kRobotBase;
-    int round_table_id = tree_builder->AddFixedModelInstance(
-        "round_table", r_WT, Eigen::Vector3d::Zero());
+  // The tables that the objects sit on.
+  for (int i = 0; i < static_cast<int>(configuration.table_poses.size()); ++i) {
+    int table_id = tree_builder->AddFixedModelInstance(
+        "table_" + std::to_string(i), configuration.table_poses[i].translation(),
+        drake::math::rotmat2rpy(configuration.table_poses[i].linear()));
     table_instances->push_back(
-        tree_builder->get_model_info_for_instance(round_table_id));
+        tree_builder->get_model_info_for_instance(table_id));
   }
   tree_builder->AddGround();
 
-  for (const Isometry3<double>& iiwa_pose : iiwa_poses) {
-    // Add the table that the arm sits on.
-    Vector3<double> r_WT = iiwa_pose.translation() + kTableBase;
-    r_WT.z() = 0;
-    tree_builder->AddFixedModelInstance("table", r_WT, Eigen::Vector3d::Zero());
+  for (const auto& robot_base_pose : configuration.robot_base_poses) {
     // Add the arm.
-    int iiwa_id = tree_builder->AddFixedModelInstance(
-        "iiwa", iiwa_pose.translation(),
-        drake::math::rotmat2rpy(iiwa_pose.linear()));
+    int robot_base_id = tree_builder->AddFixedModelInstance(
+        "iiwa", robot_base_pose.translation(),
+        drake::math::rotmat2rpy(robot_base_pose.linear()));
     iiwa_instances->push_back(
-        tree_builder->get_model_info_for_instance(iiwa_id));
+        tree_builder->get_model_info_for_instance(robot_base_id));
     // Add the gripper.
     auto frame_ee = tree_builder->tree().findFrame("iiwa_frame_ee", iiwa_instances->back().instance_id);
     auto wsg_frame = frame_ee->Clone(frame_ee->get_mutable_rigid_body());
@@ -162,15 +137,21 @@ std::unique_ptr<systems::RigidBodyPlant<double>> BuildCombinedPlant(
     int wsg_id = tree_builder->AddModelInstanceToFrame(
         "wsg", wsg_frame, drake::multibody::joints::kFixed);
     wsg_instances->push_back(tree_builder->get_model_info_for_instance(wsg_id));
+    // Add the table that the arm sits on.
+    const Isometry3<double> X_WT{
+        robot_base_pose *
+        Isometry3<double>::TranslationType(0.0, 0.0, -kTableTopZInWorld)};
+    tree_builder->AddFixedModelInstance("table", X_WT.translation(),
+                                        drake::math::rotmat2rpy(X_WT.linear()));
   }
 
-  for (int i = 0; i < static_cast<int>(box_poses.size()); ++i) {
-    int box_id = tree_builder->AddFloatingModelInstance(
-        "target_" + std::to_string(i), box_poses[i].translation(),
-        drake::math::rotmat2rpy(box_poses[i].linear()));
-    box_instances->push_back(tree_builder->get_model_info_for_instance(box_id));
+  for (int i = 0; i < static_cast<int>(configuration.object_poses.size()); ++i) {
+    int object_id = tree_builder->AddFloatingModelInstance(
+        "object_" + std::to_string(i), configuration.object_poses[i].translation(),
+        drake::math::rotmat2rpy(configuration.object_poses[i].linear()));
+    object_instances->push_back(
+        tree_builder->get_model_info_for_instance(object_id));
   }
-
 
   return std::make_unique<systems::RigidBodyPlant<double>>(
       tree_builder->Build());
@@ -245,66 +226,8 @@ int DoMain(void) {
   // Parse configuration file
   const SimulatedPlantConfiguration plant_configuration =
       ParseSimulatedPlantConfigurationOrThrow(FLAGS_configuration_file);
-
-  // Locations for the tables
-  std::vector<Eigen::Vector3d> round_table_locations;
-  double kTallTableHeight{0.91 - kTableTopZInWorld};
-  double kShortTableHeight{0.66 - kTableTopZInWorld};
-  round_table_locations.push_back(Eigen::Vector3d(0.10, 0.9, kTallTableHeight));
-  round_table_locations.push_back(
-      Eigen::Vector3d(0.80, 0.36, kShortTableHeight));
-  round_table_locations.push_back(
-      Eigen::Vector3d(0.80, -0.36, kTallTableHeight));
-  round_table_locations.push_back(
-      Eigen::Vector3d(0.10, -0.9, kShortTableHeight));
-
-  round_table_locations.push_back(round_table_locations[0]);
-  round_table_locations.back().y() -= 2.5;
-  round_table_locations.back().z() = kShortTableHeight;
-  round_table_locations.push_back(round_table_locations[1]);
-  round_table_locations.back().y() -= 2.5;
-  round_table_locations.back().z() = kTallTableHeight;
-  round_table_locations.push_back(round_table_locations[2]);
-  round_table_locations.back().y() -= 2.5;
-  round_table_locations.back().z() = kShortTableHeight;
-  round_table_locations.push_back(round_table_locations[3]);
-  round_table_locations.back().y() -= 2.5;
-  round_table_locations.back().z() = kTallTableHeight;
-
-  // Poses for the arms
-  std::vector<Isometry3<double>> iiwa_poses;
-  iiwa_poses.emplace_back(Isometry3<double>::Identity());
-  iiwa_poses.back().translate(kRobotBase);
-  iiwa_poses.emplace_back(Isometry3<double>::Identity());
-  iiwa_poses.back().translate(kRobotBase + Vector3<double>(0.0, -2.5, 0.0));
-
-  DRAKE_THROW_UNLESS(FLAGS_num_iiwas > 0 && FLAGS_num_iiwas <= 2);
-  iiwa_poses.resize(FLAGS_num_iiwas);
-  const int start_table_indices[] = {FLAGS_start_position_1,
-                                     FLAGS_start_position_2};
-  const double target_orientations[] = {FLAGS_orientation_1,
-                                        FLAGS_orientation_2};
-  const OptitrackConfiguration::Object targets[] = {
-      kOptitrackConfiguration.object(FLAGS_target_1),
-      kOptitrackConfiguration.object(FLAGS_target_2)};
-
-  std::vector<Isometry3<double>> box_poses;
-  std::vector<std::string> target_models;
-
-  for (int i = 0; i < FLAGS_num_iiwas; ++i) {
-
-    Eigen::Vector3d box_origin(0, 0, kTableTopZInWorld);
-    box_origin += round_table_locations[start_table_indices[i]];
-    Eigen::Vector3d half_target_height(0, 0,
-                                       targets[i].dimensions(2) * 0.5);
-    box_origin += half_target_height;
-    box_poses.emplace_back(Isometry3<double>::Identity());
-    box_poses.back().translation() = box_origin;
-    box_poses.back().rotate(
-        AngleAxis<double>(target_orientations[i], Vector3<double>::UnitZ()));
-    drake::log()->debug("Box {} origin = [{}]", i, box_origin.transpose());
-    target_models.push_back(targets[i].model_name);
-  }
+  const OptitrackConfiguration optitrack_configuration =
+      ParseOptitrackConfigurationOrThrow(FLAGS_configuration_file);
 
   lcm::DrakeLcm lcm;
   systems::DiagramBuilder<double> builder;
@@ -312,10 +235,8 @@ int DoMain(void) {
       box_instances, table_instances;
 
   std::unique_ptr<systems::RigidBodyPlant<double>> model_ptr =
-      BuildCombinedPlant(
-          iiwa_poses, round_table_locations, target_models,
-          box_poses, &iiwa_instances,
-          &wsg_instances, &box_instances, &table_instances);
+      BuildCombinedPlant(plant_configuration, &iiwa_instances, &wsg_instances,
+                         &box_instances, &table_instances);
 
   auto plant = builder.AddSystem<IiwaAndWsgPlantWithStateEstimator<double>>(
       std::move(model_ptr), iiwa_instances, wsg_instances, box_instances);
@@ -343,26 +264,33 @@ int DoMain(void) {
 
   // Connect to "simulated" optitrack
   std::vector<OptitrackBodyInfo> mocap_info;
-  for (int i = 0; i < FLAGS_num_iiwas; ++i) {
+  const int kNumRobotBases(
+      optitrack_configuration.robot_base_optitrack_ids.size());
+  for (int i = 0; i < kNumRobotBases; ++i) {
     mocap_info.push_back(std::make_tuple(
         plant->get_tree()
             .FindModelInstanceBodies(iiwa_instances[i].instance_id)
             .front(),
         Isometry3<double>::Identity(),
-        kOptitrackConfiguration.object(kOptitrackIiwaBaseNames.at(i)).object_id));
-    mocap_info.push_back(
-        std::make_tuple(plant->get_tree()
-                            .FindModelInstanceBodies(box_instances[i].instance_id)
-                            .front(),
-                        Isometry3<double>::Identity(), targets[i].object_id));
+        optitrack_configuration.robot_base_optitrack_ids[i]));
   }
-  for (int i = 0; i < static_cast<int>(kOptitrackTableNames.size()); ++i) {
+  const int kNumObjects(optitrack_configuration.object_optitrack_ids.size());
+  for (int i = 0; i < kNumObjects; ++i) {
+    mocap_info.push_back(std::make_tuple(
+        plant->get_tree()
+            .FindModelInstanceBodies(box_instances[i].instance_id)
+            .front(),
+        Isometry3<double>::Identity(),
+        optitrack_configuration.object_optitrack_ids[i]));
+  }
+  const int kNumTables(optitrack_configuration.table_optitrack_ids.size());
+  for (int i = 0; i < kNumTables; ++i) {
     mocap_info.push_back(std::make_tuple(
         plant->get_tree()
             .FindModelInstanceBodies(table_instances.at(i).instance_id)
             .front(),
         Isometry3<double>::Identity(),
-        kOptitrackConfiguration.object(kOptitrackTableNames[i]).object_id));
+        optitrack_configuration.table_optitrack_ids[i]));
   }
 
   Eigen::Isometry3d X_WO = Eigen::Isometry3d::Identity();
@@ -371,11 +299,6 @@ int DoMain(void) {
   rot_mat.col(1) = Eigen::Vector3d::UnitZ();
   rot_mat.col(2) = Eigen::Vector3d::UnitX();
   X_WO.linear() = rot_mat;
-  Eigen::Vector3d translator;
-  translator = Eigen::Vector3d::Zero();
-  // translator<< 0.0, 0.0, 0;
-  translator << -0.342, -0.017, 0.152;
-  X_WO.translate(translator);
   auto optitrack = builder.AddSystem<MockOptitrackSystem>(X_WO, plant->get_tree(), mocap_info);
   auto optitrack_pub = builder.AddSystem(
       systems::lcm::LcmPublisherSystem::Make<optitrack_frame_t>(
@@ -429,10 +352,6 @@ int DoMain(void) {
     wsg_status_sender->set_name("wsg_status_sender" + suffix);
     builder.Connect(plant->get_output_port_wsg_state(i),
                     wsg_status_sender->get_input_port(0));
-
-    const Eigen::Vector3d robot_base(0, 0, kTableTopZInWorld);
-    Isometry3<double> iiwa_base = Isometry3<double>::Identity();
-    iiwa_base.translation() = robot_base;
 
     auto object_state_pub = builder.AddSystem(
         systems::lcm::LcmPublisherSystem::Make<bot_core::robot_state_t>(

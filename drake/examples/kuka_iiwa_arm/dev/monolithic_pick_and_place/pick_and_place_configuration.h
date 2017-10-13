@@ -22,11 +22,17 @@ struct PlannerConfiguration {
 };
 
 struct SimulatedPlantConfiguration {
-  std::vector<Vector2<double>> base_xy_positions;
+  std::vector<Isometry3<double>> robot_base_poses;
   std::vector<std::string> table_models;
   std::vector<Isometry3<double>> table_poses;
   std::vector<std::string> object_models;
   std::vector<Isometry3<double>> object_poses;
+};
+
+struct OptitrackConfiguration {
+  std::vector<int> robot_base_optitrack_ids{};
+  std::vector<int> object_optitrack_ids{};
+  std::vector<int> table_optitrack_ids;
 };
 
 }  // namespace monolithic_pick_and_place

@@ -5,7 +5,8 @@ model_path {
 model_path {
   key: "big_robot_toy"
   value: "drake/examples/kuka_iiwa_arm/models/objects/big_robot_toy.urdf"
-} model_path {
+} 
+model_path {
   key: "round_table"
   value: "drake/examples/kuka_iiwa_arm/models/objects/round_table.urdf"
 }
@@ -53,11 +54,17 @@ table {
   optitrack_info {
     id: 8
   }
+  pose {
+    xyz: [0.1, 0.9, 0.91]
+  }
 }
 table {
   name: "round_table"
   optitrack_info {
     id: 9
+  }
+  pose {
+    xyz: [0.8, -0.36, 0.91]
   }
 }
 table {
@@ -65,11 +72,17 @@ table {
   optitrack_info {
     id: 10
   }
+  pose {
+    xyz: [0.1, -1.6, 0.91]
+  }
 }
 table {
   name: "round_table"
   optitrack_info {
     id: 11
+  }
+  pose {
+    xyz: [0.8, -2.86, 0.91]
   }
 }
 table {
@@ -77,11 +90,18 @@ table {
   optitrack_info {
     id: 12
   }
+  pose {
+    xyz: [0.8, 0.36, 0.66]
+    rpy: [0.0, 0.0, 0.7]
+  }
 }
 table {
   name: "folding_table"
   optitrack_info {
     id: 13
+  }
+  pose {
+    xyz: [0.1, -0.9, 0.66]
   }
 }
 table {
@@ -89,27 +109,35 @@ table {
   optitrack_info {
     id: 14
   }
+  pose {
+    xyz: [0.8, -2.14, 0.66]
+  }
 }
 table {
   name: "folding_table"
   optitrack_info {
     id: 15
   }
-}
-
-robot_base {
-  base_x: 0.0
-  base_y: 0.0
-  optitrack_info {
-    id: 1
+  pose {
+    xyz: [0.1, -3.4, 0.66]
   }
 }
 
 robot_base {
-  base_x: 0.0
-  base_y: -2.5
+  optitrack_info {
+    id: 1
+  }
+  pose {
+    xyz: [0.0, 0.0, 0.7645];
+  }
+}
+
+robot_base {
   optitrack_info {
     id: 6
+  }
+  pose {
+    xyz: [0.0, -2.5, 0.7645];
   }
 }
 
@@ -117,6 +145,20 @@ object {
   name: "big_robot_toy"
   optitrack_info {
     id: 7
+  }
+  pose {
+    xyz: [0.1, 0.9, 1.0]
+    rpy: [0.0, 0.0, 1.571]
+  }
+}
+
+object {
+  name: "big_robot_toy"
+  optitrack_info {
+    id: 5
+  }
+  pose {
+    xyz: [0.1, -1.6, 1.0]
   }
 }
 

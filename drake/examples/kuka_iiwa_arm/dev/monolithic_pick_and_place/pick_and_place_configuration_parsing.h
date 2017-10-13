@@ -20,6 +20,9 @@ PlannerConfiguration ParsePlannerConfigurationOrThrow(
 SimulatedPlantConfiguration ParseSimulatedPlantConfigurationOrThrow(
     const std::string& filename);
 
+OptitrackConfiguration ParseOptitrackConfigurationOrThrow(
+    const std::string& filename);
+
 }  // namespace monolithic_pick_and_place
 }  // namespace kuka_iiwa_arm
 }  // namespace examples

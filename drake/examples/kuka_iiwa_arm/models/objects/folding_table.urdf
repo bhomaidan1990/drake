@@ -10,8 +10,8 @@
       <geometry>
         <box size="0.48 0.37 0.015"/>
       </geometry>
-      <material name="Black">
-        <color rgba="0.1 0.1 0.1 1.0"/>
+      <material name="DarkBrown">
+        <color rgba="0.2 0.165 0.110 1.0"/>
       </material>
     </visual>
     <collision>
@@ -23,6 +23,6 @@
    <joint name="table_top_joint" type="fixed">
      <origin xyz="0 0 -0.0075"/>
      <parent link="table_surface_center"/>
-     <child link="table_top">
+     <child link="table_top"/>
    </joint>
 </robot>

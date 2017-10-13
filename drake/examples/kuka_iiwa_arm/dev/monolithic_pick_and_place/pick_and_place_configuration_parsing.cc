@@ -132,59 +132,79 @@ SimulatedPlantConfiguration ParseSimulatedPlantConfigurationOrThrow(
   // Extract base positions
   std::transform(
       configuration.robot_base().begin(), configuration.robot_base().end(),
-      std::back_inserter(plant_configuration.base_xy_positions),
-      [](const proto::RobotBase& robot_base) -> Vector2<double> {
-        return Vector2<double>(robot_base.base_x(), robot_base.base_y());
+      std::back_inserter(plant_configuration.robot_base_poses),
+      [](const proto::RobotBase& robot_base) -> Isometry3<double> {
+        return ParsePose(robot_base.pose());
       });
 
   // Extract table model paths
   std::transform(
       configuration.table().begin(), configuration.table().end(),
-      plant_configuration.table_models.begin(),
+      std::back_inserter(plant_configuration.table_models),
       [&configuration](const proto::Model& table) -> std::string {
         DRAKE_THROW_UNLESS(configuration.model_path().find(table.name()) !=
                            configuration.model_path().end());
-        return FindResourceOrThrow(configuration.model_path().at(table.name()));
+        return configuration.model_path().at(table.name());
       });
 
   // Extract table poses
-  std::transform(
-      configuration.table().begin(), configuration.table().end(),
-      std::back_inserter(plant_configuration.table_poses),
-      [](const proto::Model& table) -> Isometry3<double> {
-        Isometry3<double> X_WT;
-        X_WT.translation() = Vector3<double>(
-            table.pose().xyz(0), table.pose().xyz(1), table.pose().xyz(2));
-        X_WT.linear() = rpy2rotmat(Vector3<double>(
-            table.pose().rpy(0), table.pose().rpy(1), table.pose().rpy(2)));
-        return X_WT;
-      });
+  std::transform(configuration.table().begin(), configuration.table().end(),
+                 std::back_inserter(plant_configuration.table_poses),
+                 [](const proto::Model& table) -> Isometry3<double> {
+                   return ParsePose(table.pose());
+                 });
 
   // Extract object model paths
   std::transform(
       configuration.object().begin(), configuration.object().end(),
-      plant_configuration.object_models.begin(),
+      std::back_inserter(plant_configuration.object_models),
       [&configuration](const proto::Model& object) -> std::string {
         DRAKE_THROW_UNLESS(configuration.model_path().find(object.name()) !=
                            configuration.model_path().end());
-        return FindResourceOrThrow(
-            configuration.model_path().at(object.name()));
+        return configuration.model_path().at(object.name());
       });
 
   // Extract object poses
-  std::transform(
-      configuration.object().begin(), configuration.object().end(),
-      std::back_inserter(plant_configuration.object_poses),
-      [](const proto::Model& object) -> Isometry3<double> {
-        Isometry3<double> X_WT;
-        X_WT.translation() = Vector3<double>(
-            object.pose().xyz(0), object.pose().xyz(1), object.pose().xyz(2));
-        X_WT.linear() = rpy2rotmat(Vector3<double>(
-            object.pose().rpy(0), object.pose().rpy(1), object.pose().rpy(2)));
-        return X_WT;
-      });
+  std::transform(configuration.object().begin(), configuration.object().end(),
+                 std::back_inserter(plant_configuration.object_poses),
+                 [](const proto::Model& object) -> Isometry3<double> {
+                   return ParsePose(object.pose());
+                 });
 
   return plant_configuration;
+}
+
+OptitrackConfiguration ParseOptitrackConfigurationOrThrow(
+    const std::string& filename) {
+  OptitrackConfiguration optitrack_configuration;
+
+  // Read configuration file
+  const proto::PickAndPlaceConfiguration configuration{
+      ReadProtobufFileOrThrow(filename)};
+
+  // Extract Optitrack Ids for tables
+  std::transform(configuration.table().begin(), configuration.table().end(),
+                 std::back_inserter(optitrack_configuration.table_optitrack_ids),
+                 [](const proto::Model& model) -> int {
+                   return model.optitrack_info().id();
+                 });
+
+  // Extract Optitrack Ids for objects
+  std::transform(configuration.object().begin(), configuration.object().end(),
+                 std::back_inserter(optitrack_configuration.object_optitrack_ids),
+                 [](const proto::Model& model) -> int {
+                   return model.optitrack_info().id();
+                 });
+
+  // Extract Optitrack Ids for robot bases
+  std::transform(
+      configuration.robot_base().begin(), configuration.robot_base().end(),
+      std::back_inserter(optitrack_configuration.robot_base_optitrack_ids),
+      [](const proto::RobotBase& robot_base) -> int {
+        return robot_base.optitrack_info().id();
+      });
+
+  return optitrack_configuration;
 }
 
 }  // namespace monolithic_pick_and_place

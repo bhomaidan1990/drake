@@ -171,6 +171,7 @@ drake_cc_binary(
     name = "lcm_pick_and_place_simulator",
     srcs = ["lcm_pick_and_place_simulator.cc"],
     data = [
+        ":configuration",
         "//drake/examples/kuka_iiwa_arm:models",
         "//drake/manipulation/models/iiwa_description:models",
         "//drake/manipulation/models/wsg_50_description:models",

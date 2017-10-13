@@ -45,11 +45,10 @@ message Geometry {
     }
 }
 
-// Next ID: 4
+// Next ID: 3
 message RobotBase {
-    double base_x = 1;
-    double base_y = 2;
-    OptitrackInfo optitrack_info = 3;
+    OptitrackInfo optitrack_info = 1;
+    Pose pose = 2;
 }
 
 // Next ID: 8
