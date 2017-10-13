@@ -162,6 +162,10 @@ object {
   }
 }
 
-planning_model_path: "drake/manipulation/models/iiwa_description/urdf/iiwa14_polytope_collision.urdf";
+planning_model_path: "drake/manipulation/models/iiwa_description/urdf/iiwa14_polytope_collision.urdf"
 
-planning_end_effector_name: "iiwa_link_ee";
+planning_end_effector_name: "iiwa_link_ee"
+
+#static_friction_coefficient: 0.9
+#dynamic_friction_coefficient: 0.5
+#static_friction_coefficient: 0.01

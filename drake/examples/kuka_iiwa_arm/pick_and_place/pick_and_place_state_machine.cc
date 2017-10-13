@@ -631,7 +631,7 @@ bool PickAndPlaceStateMachine::ComputeNominalConfigurations(
   std::vector<std::vector<RigidBodyConstraint*>> constraint_array;
   std::vector<double> yaw_offsets{M_PI, 0.0};
   std::unique_ptr<RigidBodyTree<double>> robot{iiwa.Clone()};
-  std::vector<double> pitch_offsets{M_PI/6};
+  std::vector<double> pitch_offsets{M_PI/8};
   int kNumJoints = iiwa.get_num_positions();
 
   int end_effector_body_idx = robot->FindBodyIndex("iiwa_link_ee");
