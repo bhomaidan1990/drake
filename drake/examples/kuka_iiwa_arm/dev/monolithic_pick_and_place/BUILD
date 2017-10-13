@@ -28,21 +28,6 @@ cc_proto_library(
 )
 
 drake_cc_library(
-    name = "pick_and_place_configuration_parsing",
-    srcs = [
-        "pick_and_place_configuration_parsing.cc",
-    ],
-    hdrs = [
-        "pick_and_place_configuration_parsing.h",
-    ],
-    deps = [
-        ":pick_and_place_configuration",
-        ":pick_and_place_configuration_proto",
-        "//drake/common/proto:protobuf",
-    ],
-)
-
-drake_cc_library(
     name = "optitrack_configuration",
     srcs = [
         "optitrack_configuration.cc",
@@ -117,7 +102,7 @@ drake_cc_binary(
     deps = [
         ":kuka_pick_and_place_monolithic",
         ":optitrack_configuration",
-        ":pick_and_place_configuration_parsing",
+        ":pick_and_place_configuration_proto",
         ":pick_and_place_planner",
         "//drake/common:find_resource",
         "//drake/common:text_logging_gflags",

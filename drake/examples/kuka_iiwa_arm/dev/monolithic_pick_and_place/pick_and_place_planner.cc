@@ -89,7 +89,7 @@ class RobotStateSplicer : public systems::LeafSystem<double> {
 };
 }  // namespace
 
-PickAndPlacePlanner::PickAndPlacePlanner(const Configuration& configuration) {
+PickAndPlacePlanner::PickAndPlacePlanner(const PlannerConfiguration& configuration) {
   DiagramBuilder<double> builder;
 
   auto state_machine = builder.AddSystem<PickAndPlaceStateMachineSystem>(
