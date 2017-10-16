@@ -166,6 +166,7 @@ planning_model_path: "drake/manipulation/models/iiwa_description/urdf/iiwa14_pol
 
 planning_end_effector_name: "iiwa_link_ee"
 
+# Defaults
 #static_friction_coefficient: 0.9
 #dynamic_friction_coefficient: 0.5
 #static_friction_coefficient: 0.01

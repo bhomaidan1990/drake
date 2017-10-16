@@ -27,7 +27,9 @@ struct SimulatedPlantConfiguration {
   std::vector<Isometry3<double>> table_poses;
   std::vector<std::string> object_models;
   std::vector<Isometry3<double>> object_poses;
-  double static_friction_coef;
+  double static_friction_coef{0.9};
+  double dynamic_friction_coef{0.5};
+  double v_stiction_tolerance{0.01};
 };
 
 struct OptitrackConfiguration {

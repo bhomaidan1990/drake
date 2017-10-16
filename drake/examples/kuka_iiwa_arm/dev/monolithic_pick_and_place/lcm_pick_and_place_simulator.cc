@@ -237,7 +237,10 @@ int DoMain(void) {
   std::unique_ptr<systems::RigidBodyPlant<double>> model_ptr =
       BuildCombinedPlant(plant_configuration, &iiwa_instances, &wsg_instances,
                          &box_instances, &table_instances);
-  model_ptr->set_friction_contact_parameters(1, 1, 0.001);
+  model_ptr->set_friction_contact_parameters(
+      plant_configuration.static_friction_coef,
+      plant_configuration.dynamic_friction_coef,
+      plant_configuration.v_stiction_tolerance);
 
   auto plant = builder.AddSystem<IiwaAndWsgPlantWithStateEstimator<double>>(
       std::move(model_ptr), iiwa_instances, wsg_instances, box_instances);

@@ -171,6 +171,19 @@ SimulatedPlantConfiguration ParseSimulatedPlantConfigurationOrThrow(
                    return ParsePose(object.pose());
                  });
 
+  if (configuration.static_friction_coefficient() > 0) {
+    plant_configuration.static_friction_coef =
+        configuration.static_friction_coefficient();
+  }
+  if (configuration.dynamic_friction_coefficient() > 0) {
+    plant_configuration.dynamic_friction_coef =
+        configuration.dynamic_friction_coefficient();
+  }
+  if (configuration.v_stiction_tolerance() > 0) {
+    plant_configuration.v_stiction_tolerance =
+        configuration.v_stiction_tolerance();
+  }
+
   return plant_configuration;
 }
 
