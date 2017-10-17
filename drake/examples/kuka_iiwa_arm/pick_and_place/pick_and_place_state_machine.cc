@@ -547,7 +547,9 @@ bool PickAndPlaceStateMachine::ComputeDesiredPoses(
 
   // Set ApproachPickPregrasp pose
   Isometry3<double> X_GGoffset{Isometry3<double>::Identity()};
-  X_GGoffset.translate(Vector3<double>(-0.75*kPreGraspHeightOffset, 0.0, 0.0));
+  //X_GGoffset.translate(Vector3<double>(-0.75*kPreGraspHeightOffset, 0.0, 0.0));
+  X_OiO.setIdentity();
+  X_OiO.translation()[2] = kPreGraspHeightOffset;
   X_WE_desired_.emplace(PickAndPlaceState::kApproachPickPregrasp,
                         X_WOi * X_OiO * X_OG * X_GGoffset* X_GE);
 

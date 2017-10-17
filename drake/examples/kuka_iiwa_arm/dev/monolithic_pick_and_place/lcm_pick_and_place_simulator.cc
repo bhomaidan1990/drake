@@ -47,7 +47,7 @@ DEFINE_double(orientation_1, 0, "Yaw angle of the first target.");
 DEFINE_double(orientation_2, M_PI_2, "Yaw angle of the second target.");
 DEFINE_int32(start_position_1, 1, "Position index to start from");
 DEFINE_int32(start_position_2, 3, "Position index to start from");
-DEFINE_double(dt, 1e-3, "Integration step size");
+DEFINE_double(dt, 5e-4, "Integration step size");
 DEFINE_double(realtime_rate, 1.0, "Rate at which to run the simulation, "
     "relative to realtime");
 DEFINE_bool(quick, false, "Run only a brief simulation and return success "
@@ -133,7 +133,7 @@ std::unique_ptr<systems::RigidBodyPlant<double>> BuildCombinedPlant(
     auto wsg_frame = frame_ee->Clone(frame_ee->get_mutable_rigid_body());
     wsg_frame->get_mutable_transform_to_body()->rotate(
         Eigen::AngleAxisd(-0.39269908, Eigen::Vector3d::UnitY()));
-    wsg_frame->get_mutable_transform_to_body()->translate(0.06*Eigen::Vector3d::UnitY());
+    wsg_frame->get_mutable_transform_to_body()->translate(0.04*Eigen::Vector3d::UnitY());
     int wsg_id = tree_builder->AddModelInstanceToFrame(
         "wsg", wsg_frame, drake::multibody::joints::kFixed);
     wsg_instances->push_back(tree_builder->get_model_info_for_instance(wsg_id));
