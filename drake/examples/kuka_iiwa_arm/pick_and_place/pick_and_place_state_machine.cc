@@ -729,8 +729,6 @@ bool PickAndPlaceStateMachine::ComputeNominalConfigurations(
   IKResults ik_res;
   IKoptions ikoptions(robot.get());
   ikoptions.setFixInitialState(false);
-  ikoptions.setQv(MatrixX<double>::Identity(robot->get_num_positions(),
-                                            robot->get_num_positions()));
   const int kNumRestarts = 50;
   std::default_random_engine rand_generator{1234};
   for (int i = 0; i < kNumRestarts; ++i) {
