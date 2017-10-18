@@ -530,9 +530,13 @@ bool PickAndPlaceStateMachine::ComputeDesiredPoses(
   // should be rotated about the y-axis by pitch_offset
   Isometry3<double> X_OG{Isometry3<double>::Identity()};
   X_OG.rotate(AngleAxis<double>(pitch_offset, Vector3<double>::UnitY()));
-  X_OG.translation()[0] =
+  X_OG.translation().x() =
       std::min<double>(-0.5 * env_state.get_object_dimensions().x() +
                            0.07 * std::cos(pitch_offset),
+                       0);
+  X_OG.translation().z() =
+      std::max<double>(0.5 * env_state.get_object_dimensions().z() -
+                           0.07 * std::sin(pitch_offset),
                        0);
 
   // Gripper is rotated relative to the end effector link.
@@ -635,7 +639,7 @@ bool PickAndPlaceStateMachine::ComputeNominalConfigurations(
   std::vector<std::vector<RigidBodyConstraint*>> constraint_array;
   std::vector<double> yaw_offsets{M_PI, 0.0};
   std::unique_ptr<RigidBodyTree<double>> robot{iiwa.Clone()};
-  std::vector<double> pitch_offsets{M_PI/8};
+  std::vector<double> pitch_offsets{M_PI/6};
   int kNumJoints = iiwa.get_num_positions();
 
   int end_effector_body_idx = robot->FindBodyIndex("iiwa_link_ee");
