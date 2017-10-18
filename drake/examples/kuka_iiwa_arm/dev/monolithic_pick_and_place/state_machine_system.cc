@@ -56,19 +56,13 @@ struct PickAndPlaceStateMachineSystem::InternalState {
 };
 
 PickAndPlaceStateMachineSystem::PickAndPlaceStateMachineSystem(
-    const std::string& iiwa_model_path, const std::string& end_effector_name,
-    const Isometry3<double>& iiwa_base, const std::vector<double> table_radii,
-    const Vector3<double>& box_dimensions, const double period_sec)
-    : iiwa_model_path_(iiwa_model_path),
-      end_effector_name_(end_effector_name),
-      iiwa_base_(iiwa_base),
-      table_radii_(table_radii),
-      box_dimensions_(box_dimensions) {
+    const PlannerConfiguration& configuration)
+    : configuration_(configuration) {
   input_port_iiwa_state_ = this->DeclareAbstractInputPort().get_index();
   input_port_box_state_ = this->DeclareAbstractInputPort().get_index();
   input_port_wsg_status_ = this->DeclareAbstractInputPort().get_index();
-  input_port_table_state_.resize(num_tables());
-  for (int i = 0; i < num_tables(); ++i) {
+  input_port_table_state_.resize(this->num_tables());
+  for (int i = 0; i < this->num_tables(); ++i) {
     input_port_table_state_[i] = this->DeclareAbstractInputPort().get_index();
   }
 
@@ -84,18 +78,19 @@ PickAndPlaceStateMachineSystem::PickAndPlaceStateMachineSystem(
               &PickAndPlaceStateMachineSystem::CalcWsgCommand)
           .get_index();
 
-  this->DeclarePeriodicUnrestrictedUpdate(period_sec, 0);
+  this->DeclarePeriodicUnrestrictedUpdate(configuration.period_sec, 0);
 
   parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
-      iiwa_model_path_, multibody::joints::kFixed, &iiwa_tree_);
+      iiwa_model_path(), multibody::joints::kFixed, &iiwa_tree_);
 }
 
 std::unique_ptr<systems::AbstractValues>
 PickAndPlaceStateMachineSystem::AllocateAbstractState() const {
   std::vector<std::unique_ptr<systems::AbstractValue>> abstract_vals;
-  abstract_vals.push_back(std::unique_ptr<systems::AbstractValue>(
-      new systems::Value<InternalState>(
-          InternalState(iiwa_model_path_, end_effector_name_, table_radii_, box_dimensions_))));
+  abstract_vals.push_back(
+      std::unique_ptr<systems::AbstractValue>(new systems::Value<InternalState>(
+          InternalState(iiwa_model_path(), end_effector_name(),
+                        configuration_.table_radii, target_dimensions()))));
   return std::make_unique<systems::AbstractValues>(std::move(abstract_vals));
 }
 
@@ -104,8 +99,9 @@ void PickAndPlaceStateMachineSystem::SetDefaultState(
     systems::State<double>* state) const {
   InternalState& internal_state =
       state->get_mutable_abstract_state<InternalState>(kStateIndex);
-  internal_state = InternalState(iiwa_model_path_, end_effector_name_,
-                                 table_radii_, box_dimensions_);
+  internal_state =
+      InternalState(iiwa_model_path(), end_effector_name(),
+                    configuration_.table_radii, target_dimensions());
 }
 
 void PickAndPlaceStateMachineSystem::CalcIiwaPlan(

@@ -92,10 +92,7 @@ class RobotStateSplicer : public systems::LeafSystem<double> {
 PickAndPlacePlanner::PickAndPlacePlanner(const PlannerConfiguration& configuration) {
   DiagramBuilder<double> builder;
 
-  auto state_machine = builder.AddSystem<PickAndPlaceStateMachineSystem>(
-      configuration.model_path, configuration.end_effector_name,
-      Isometry3<double>::Identity() /*iiwa_base*/, configuration.table_radii,
-      configuration.target_dimensions);
+  auto state_machine = builder.AddSystem<PickAndPlaceStateMachineSystem>(configuration);
 
   // Export input ports for WSG status message.
   input_port_wsg_status_ =

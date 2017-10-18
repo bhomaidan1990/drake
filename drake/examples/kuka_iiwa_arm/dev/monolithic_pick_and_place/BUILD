@@ -68,6 +68,7 @@ drake_cc_library(
         "state_machine_system.h",
     ],
     deps = [
+        ":pick_and_place_configuration",
         "//drake/examples/kuka_iiwa_arm:iiwa_common",
         "//drake/examples/kuka_iiwa_arm/pick_and_place",
         "//drake/multibody:rigid_body_tree",

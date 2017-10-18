@@ -6,6 +6,7 @@
 
 #include "bot_core/robot_state_t.hpp"
 
+#include "drake/examples/kuka_iiwa_arm/dev/monolithic_pick_and_place/pick_and_place_configuration.h"
 #include "drake/examples/kuka_iiwa_arm/pick_and_place/pick_and_place_state_machine.h"
 #include "drake/examples/kuka_iiwa_arm/pick_and_place/world_state.h"
 #include "drake/multibody/rigid_body_tree.h"
@@ -32,13 +33,7 @@ class PickAndPlaceStateMachineSystem : public systems::LeafSystem<double> {
    * @param period_sec : The update interval of the unrestricted update of
    * this system. This should be bigger than that of the PlanSource components.
    */
-  PickAndPlaceStateMachineSystem(
-      const std::string& iiwa_model_path,
-      const std::string& end_effector_name,
-      const Isometry3<double>& iiwa_base,
-      const std::vector<double>table_radii,
-      const Vector3<double>& box_dimensions,
-      const double period_sec = 0.01);
+  PickAndPlaceStateMachineSystem(const PlannerConfiguration& configuration);
 
   std::unique_ptr<systems::AbstractValues> AllocateAbstractState()
       const override;
@@ -122,7 +117,19 @@ class PickAndPlaceStateMachineSystem : public systems::LeafSystem<double> {
       const systems::Context<double>& context,
       lcmt_schunk_wsg_command* wsg_command) const;
 
-  int num_tables() const { return table_radii_.size(); };
+  int num_tables() const { return configuration_.table_radii.size(); };
+
+  const std::string& iiwa_model_path() const {
+    return configuration_.model_path;
+  };
+
+  const std::string& end_effector_name() const {
+    return configuration_.end_effector_name;
+  };
+
+  const Vector3<double>& target_dimensions() const {
+    return configuration_.target_dimensions;
+  };
 
   struct InternalState;
 
@@ -136,12 +143,8 @@ class PickAndPlaceStateMachineSystem : public systems::LeafSystem<double> {
   int output_port_iiwa_plan_{-1};
   int output_port_wsg_command_{-1};
 
-  std::string iiwa_model_path_;
-  std::string end_effector_name_;
-  const Isometry3<double> iiwa_base_;
+  const PlannerConfiguration configuration_;
 
-  const std::vector<double> table_radii_;
-  const Vector3<double> box_dimensions_;
 };
 
 }  // namespace monolithic_pick_and_place
