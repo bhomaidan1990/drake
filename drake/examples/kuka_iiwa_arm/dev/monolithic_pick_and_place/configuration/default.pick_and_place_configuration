@@ -170,3 +170,5 @@ planning_end_effector_name: "iiwa_link_ee"
 #static_friction_coefficient: 0.9
 #dynamic_friction_coefficient: 0.5
 #static_friction_coefficient: 0.01
+stiffness: 3000
+dissipation: 2

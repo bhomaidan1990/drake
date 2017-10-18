@@ -30,6 +30,8 @@ struct SimulatedPlantConfiguration {
   double static_friction_coef{0.9};
   double dynamic_friction_coef{0.5};
   double v_stiction_tolerance{0.01};
+  double stiffness{10000};
+  double dissipation{2};
 };
 
 struct OptitrackConfiguration {

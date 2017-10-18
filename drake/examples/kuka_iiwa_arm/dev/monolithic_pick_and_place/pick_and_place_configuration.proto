@@ -51,7 +51,7 @@ message RobotBase {
     Pose pose = 2;
 }
 
-// Next ID: 11
+// Next ID: 13
 message PickAndPlaceConfiguration {
     map<string, string> model_path = 1;
     map<string, Geometry> planning_geometry = 2;
@@ -69,4 +69,6 @@ message PickAndPlaceConfiguration {
     double static_friction_coefficient = 8;
     double dynamic_friction_coefficient = 9;
     double v_stiction_tolerance = 10;
+    double stiffness = 11;
+    double dissipation = 12;
 }

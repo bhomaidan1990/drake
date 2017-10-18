@@ -183,6 +183,14 @@ SimulatedPlantConfiguration ParseSimulatedPlantConfigurationOrThrow(
     plant_configuration.v_stiction_tolerance =
         configuration.v_stiction_tolerance();
   }
+  if (configuration.stiffness() > 0) {
+    plant_configuration.stiffness =
+        configuration.stiffness();
+  }
+  if (configuration.dissipation() > 0) {
+    plant_configuration.dissipation =
+        configuration.dissipation();
+  }
 
   return plant_configuration;
 }
