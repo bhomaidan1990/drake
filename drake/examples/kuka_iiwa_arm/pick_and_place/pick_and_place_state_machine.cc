@@ -577,7 +577,7 @@ bool PickAndPlaceStateMachine::ComputeDesiredPoses(
 
   // Set LiftFromPlace pose
   X_OfO.setIdentity();
-  X_OiO.translation()[0] = -0.1*kPreGraspHeightOffset;
+  X_OfO.translation()[0] = -0.1*kPreGraspHeightOffset;
   X_OfO.translation()[2] = kPreGraspHeightOffset;
   X_WE_desired_.emplace(PickAndPlaceState::kLiftFromPlace,
                         X_WOf * X_OfO * X_OG * X_GE);
