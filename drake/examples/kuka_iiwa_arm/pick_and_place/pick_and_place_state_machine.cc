@@ -478,7 +478,7 @@ bool ComputeInitialAndFinalObjectPoses(
   Vector3<double> dir_TO_final = -X_WT.linear().inverse()*r_WT;
   dir_TO_final.z() = 0;
   dir_TO_final.normalize();
-  Vector3<double> r_TO_final = 0.5 * destination_table_radius * dir_TO_final;
+  Vector3<double> r_TO_final = 0.0 * destination_table_radius * dir_TO_final;
   r_TO_final.z() += 0.5*env_state.get_object_dimensions().z();
   Matrix3<double> R_TO_final{Matrix3<double>::Identity()};
   R_TO_final.col(0) = -dir_TO_final;
