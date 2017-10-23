@@ -35,6 +35,9 @@ class ConstraintRelaxingIk {
     double rot_tol{0.05};
     /// Signals if orientation constraint is enabled.
     bool constrain_orientation{false};
+    /// If non-zero, specifies the max change (+/-) in joint angle from the
+    /// previous step.
+    double joint_angle_tol{0.};
 
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
   };
@@ -86,10 +89,13 @@ class ConstraintRelaxingIk {
    */
   bool PlanSequentialTrajectory(
       const std::vector<IkCartesianWaypoint>& waypoints,
-      const VectorX<double>& q_current, IKResults* ik_res);
+      const VectorX<double>& q_current,
+      const VectorX<double>& q_nom,
+      IKResults* ik_res);
 
  private:
   bool SolveIk(const IkCartesianWaypoint& waypoint, const VectorX<double>& q0,
+               const VectorX<double>& q_seed,
                const VectorX<double>& q_nom,
                const Vector3<double>& pos_tol, double rot_tol,
                VectorX<double>* q_res, std::vector<int>* info,
