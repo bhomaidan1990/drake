@@ -72,7 +72,7 @@ std::unique_ptr<systems::RigidBodyPlant<double>> BuildCombinedPlant(
   }
   tree_builder->AddGround();
 
-  for (const auto& robot_base_pose : configuration.robot_base_poses) {
+  for (const auto& robot_base_pose : configuration.robot_poses) {
     // Add the arm.
     int robot_base_id = tree_builder->AddFixedModelInstance(
         "iiwa", robot_base_pose.translation(),
@@ -256,7 +256,7 @@ PickAndPlacePlant::PickAndPlacePlant(
       builder.ExportOutput(iiwa_and_wsg_plant_->get_output_port_plant_state());
 
   std::vector<IiwaCommandReceiver*> iiwa_command_receivers;
-  const int kNumIiwas = plant_configuration.robot_base_poses.size();
+  const int kNumIiwas = plant_configuration.robot_poses.size();
   for (int i = 0; i < kNumIiwas; ++i) {
     const std::string suffix{"_" + std::to_string(i)};
     auto iiwa_command_receiver = builder.AddSystem<IiwaCommandReceiver>(7);

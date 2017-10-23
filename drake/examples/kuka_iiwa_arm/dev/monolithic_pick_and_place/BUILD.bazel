@@ -4,6 +4,7 @@ load(
     "//tools:drake.bzl",
     "drake_cc_binary",
     "drake_cc_library",
+    "drake_cc_googletest",
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
 load(":pick_and_place_test.bzl", "pick_and_place_test")
@@ -37,17 +38,55 @@ drake_cc_library(
 drake_cc_library(
     name = "kuka_pick_and_place_monolithic",
     srcs = [
-        "state_machine_system.cc",
+        "monolithic_pick_and_place_system.cc",
     ],
     hdrs = [
-        "state_machine_system.h",
+        "monolithic_pick_and_place_system.h",
     ],
     deps = [
+        ":pick_and_place_planner",
+        ":pick_and_place_plant",
         "//drake/examples/kuka_iiwa_arm:iiwa_common",
-        "//drake/examples/kuka_iiwa_arm/pick_and_place",
+        "//drake/examples/kuka_iiwa_arm:lcm_plan_interpolator",
         "//drake/multibody:rigid_body_tree",
         "//drake/multibody/parsers",
+        "//drake/multibody/rigid_body_plant:contact_results_to_lcm",
         "//drake/systems/framework:leaf_system",
+        "//drake/systems/primitives:zero_order_hold",
+    ],
+)
+
+drake_cc_library(
+    name = "pick_and_place_planner",
+    hdrs = [
+        "state_machine_system.h",
+        "pick_and_place_planner.h",
+    ],
+    srcs = [
+        "state_machine_system.cc",
+        "pick_and_place_planner.cc",
+    ],
+    data = [
+        "//drake/examples/kuka_iiwa_arm:models",
+        "//drake/manipulation/models/iiwa_description:models",
+    ],
+    deps = [
+        "//drake/examples/kuka_iiwa_arm/pick_and_place",
+        "//drake/common:find_resource",
+        "//drake/common:text_logging_gflags",
+        "//drake/examples/kuka_iiwa_arm:iiwa_common",
+        "//drake/examples/kuka_iiwa_arm:iiwa_lcm",
+        "//drake/lcm",
+        "//drake/lcmtypes:iiwa",
+        "//drake/lcmtypes:schunk",
+        "//drake/manipulation/perception:optitrack_pose_extractor",
+        "//drake/systems/framework:leaf_system",
+        "//drake/systems/lcm",
+        "//drake/systems/primitives:pass_through",
+        "//drake/util:lcm_util",
+        "@com_github_gflags_gflags//:gflags",
+        "@lcmtypes_bot2_core",
+        "@lcmtypes_robotlocomotion",
     ],
 )
 
@@ -81,20 +120,27 @@ drake_cc_binary(
     ],
     deps = [
         ":kuka_pick_and_place_monolithic",
+        ":pick_and_place_configuration_parsing",
         "//drake/common:find_resource",
         "//drake/common:text_logging_gflags",
         "//drake/examples/kuka_iiwa_arm:iiwa_common",
         "//drake/examples/kuka_iiwa_arm:iiwa_lcm",
-        "//drake/examples/kuka_iiwa_arm/iiwa_world:iiwa_wsg_diagram_factory",
         "//drake/lcm",
         "//drake/lcmtypes:iiwa",
-        "//drake/manipulation/planner:robot_plan_interpolator",
-        "//drake/manipulation/schunk_wsg:schunk_wsg_controller",
-        "//drake/manipulation/util:world_sim_tree_builder",
-        "//drake/multibody/rigid_body_plant:contact_results_to_lcm",
         "//drake/systems/analysis:simulator",
         "@com_github_gflags_gflags//:gflags",
         "@lcmtypes_bot2_core",
+    ],
+)
+
+drake_cc_googletest(
+    name = "monolithic_pick_and_place_system_test",
+    size = "medium",
+    deps = [
+        ":kuka_pick_and_place_monolithic",
+        "//drake/common/test_utilities:eigen_matrix_compare",
+        "//drake/systems/analysis:simulator",
+        "//drake/systems/framework",
     ],
 )
 
