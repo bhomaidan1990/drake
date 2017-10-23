@@ -233,7 +233,7 @@ PickAndPlacePlant::PickAndPlacePlant(
       builder.ExportOutput(iiwa_and_wsg_plant_->get_output_port_plant_state());
 
   std::vector<IiwaCommandReceiver*> iiwa_command_receivers;
-  const int kNumIiwas = plant_configuration.robot_base_poses.size();
+  const int kNumIiwas = plant_configuration.robot_poses.size();
   for (int i = 0; i < kNumIiwas; ++i) {
     const std::string suffix{"_" + std::to_string(i)};
     auto iiwa_command_receiver = builder.AddSystem<IiwaCommandReceiver>(7);

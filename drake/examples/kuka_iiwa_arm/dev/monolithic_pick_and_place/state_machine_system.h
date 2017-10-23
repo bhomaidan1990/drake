@@ -6,9 +6,10 @@
 
 #include "bot_core/robot_state_t.hpp"
 
+#include "drake/examples/kuka_iiwa_arm/pick_and_place/pick_and_place_configuration.h"
 #include "drake/examples/kuka_iiwa_arm/pick_and_place/pick_and_place_state_machine.h"
 #include "drake/examples/kuka_iiwa_arm/pick_and_place/world_state.h"
-#include "drake/manipulation/planner/constraint_relaxing_ik.h"
+#include "drake/lcmt_iiwa_status.hpp"
 #include "drake/multibody/rigid_body_tree.h"
 #include "drake/systems/framework/leaf_system.h"
 #include "drake/systems/framework/system_symbolic_inspector.h"
@@ -34,11 +35,7 @@ class PickAndPlaceStateMachineSystem : public systems::LeafSystem<double> {
    * this system. This should be bigger than that of the PlanSource components.
    */
   PickAndPlaceStateMachineSystem(
-      const std::string& iiwa_model_path,
-      const std::string& end_effector_name,
-      const Isometry3<double>& iiwa_base,
-      const std::vector<Isometry3<double>>& place_locations,
-      const double period_sec = 0.01);
+      const pick_and_place::PlannerConfiguration& configuration, bool single_move);
 
   std::unique_ptr<systems::AbstractValues> AllocateAbstractState()
       const override;
@@ -57,12 +54,22 @@ class PickAndPlaceStateMachineSystem : public systems::LeafSystem<double> {
 
   /**
    * Getter for the input port corresponding to the abstract input with iiwa
-   * state message (LCM `robot_state_t` message).
+   * state message (LCM `lcmt_iiwa_status` message).
    * @return The corresponding `sytems::InputPortDescriptor`.
    */
   const systems::InputPortDescriptor<double>& get_input_port_iiwa_state()
       const {
     return this->get_input_port(input_port_iiwa_state_);
+  }
+
+  /**
+   * Getter for the input port corresponding to the abstract input with iiwa
+   * base pose.
+   * @return The corresponding `sytems::InputPortDescriptor`.
+   */
+  const systems::InputPortDescriptor<double>& get_input_port_iiwa_base_pose()
+      const {
+    return this->get_input_port(input_port_iiwa_base_pose_);
   }
 
   /**
@@ -72,6 +79,16 @@ class PickAndPlaceStateMachineSystem : public systems::LeafSystem<double> {
    */
   const systems::InputPortDescriptor<double>& get_input_port_box_state() const {
     return this->get_input_port(input_port_box_state_);
+  }
+
+  /**
+   * Getter for the input port corresponding to the abstract input with box
+   * state message (LCM `botcore::robot_state_t` message).
+   * @return The corresponding `sytems::InputPortDescriptor`.
+   */
+  const systems::InputPortDescriptor<double>& get_input_port_table_state(int index) const {
+    DRAKE_THROW_UNLESS(index >= 0 && index < static_cast<int>(input_port_table_state_.size()));
+    return this->get_input_port(input_port_table_state_[index]);
   }
 
   /**
@@ -112,25 +129,37 @@ class PickAndPlaceStateMachineSystem : public systems::LeafSystem<double> {
       const systems::Context<double>& context,
       lcmt_schunk_wsg_command* wsg_command) const;
 
+  int num_tables() const { return configuration_.num_tables; };
+
+  const std::string& iiwa_model_path() const {
+    return configuration_.model_path;
+  };
+
+  const std::string& end_effector_name() const {
+    return configuration_.end_effector_name;
+  };
+
+  const Vector3<double>& target_dimensions() const {
+    return configuration_.target_dimensions;
+  };
+
   struct InternalState;
 
   RigidBodyTree<double> iiwa_tree_{};
   // Input ports.
   int input_port_iiwa_state_{-1};
+  int input_port_iiwa_base_pose_{-1};
   int input_port_box_state_{-1};
+  std::vector<int> input_port_table_state_;
   int input_port_wsg_status_{-1};
   // Output ports.
   int output_port_iiwa_plan_{-1};
   int output_port_wsg_command_{-1};
 
-  std::string iiwa_model_path_;
-  std::string end_effector_name_;
-  const Isometry3<double> iiwa_base_;
+  const pick_and_place::PlannerConfiguration configuration_;
 
-  const std::unique_ptr<
-    manipulation::planner::ConstraintRelaxingIk> planner_{nullptr};
+  bool single_move_;
 
-  std::vector<Isometry3<double>> place_locations_;
 };
 
 }  // namespace monolithic_pick_and_place
