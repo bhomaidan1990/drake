@@ -34,11 +34,14 @@ ConstraintRelaxingIk::ConstraintRelaxingIk(
 
 bool ConstraintRelaxingIk::PlanSequentialTrajectory(
     const std::vector<IkCartesianWaypoint>& waypoints,
-    const VectorX<double>& q_current, IKResults* ik_res) {
+    const VectorX<double>& q_current,
+    const VectorX<double>& q_nom_in,
+   IKResults* ik_res) {
   DRAKE_DEMAND(ik_res);
   int num_steps = static_cast<int>(waypoints.size());
 
-  VectorX<double> q_prev = q_current;
+  VectorX<double> q_nom = q_nom_in;
+  VectorX<double> q_seed = q_nom_in;
   VectorX<double> q0 = q_current;
   VectorX<double> q_sol = q_current;
 
@@ -79,8 +82,8 @@ bool ConstraintRelaxingIk::PlanSequentialTrajectory(
 
       std::vector<int> info;
       std::vector<std::string> infeasible_constraints;
-      bool res = SolveIk(waypoint, q0, q_prev, pos_tol, rot_tol, &q_sol, &info,
-                         &infeasible_constraints);
+      bool res = SolveIk(waypoint, q0, q_seed, q_nom, pos_tol, rot_tol,
+                         &q_sol, &info, &infeasible_constraints);
 
       if (res) {
         // Breaks if the current tolerance is below given threshold.
@@ -98,7 +101,7 @@ bool ConstraintRelaxingIk::PlanSequentialTrajectory(
           mode = RelaxMode::kRelaxPosTol;
         }
         // Sets the initial guess to the current solution.
-        q0 = q_sol;
+        q_seed = q_sol;
       } else {
         // Relaxes the constraints no solution is found.
         if (mode == RelaxMode::kRelaxRotTol && waypoint.constrain_orientation) {
@@ -113,7 +116,7 @@ bool ConstraintRelaxingIk::PlanSequentialTrajectory(
       // the constraints for max times.
       if (relaxed_ctr > kMaxNumConstraintRelax) {
         // Make a random initial guess.
-        q0 = robot_->getRandomConfiguration(rand_generator_);
+        q_seed = robot_->getRandomConfiguration(rand_generator_);
         // Resets constraints tolerance.
         pos_tol = kInitialPosTolerance;
         rot_tol = kInitialRotTolerance;
@@ -138,7 +141,8 @@ bool ConstraintRelaxingIk::PlanSequentialTrajectory(
     }
 
     // Sets next IK's initial and bias to current solution.
-    q_prev = q_sol;
+    q_nom = q_sol;
+    q_seed = q_sol;
     q0 = q_sol;
 
     ik_res->info[step_ctr + 1] = 1;
@@ -152,6 +156,7 @@ bool ConstraintRelaxingIk::PlanSequentialTrajectory(
 bool ConstraintRelaxingIk::SolveIk(
     const IkCartesianWaypoint& waypoint,
     const VectorX<double>& q0,
+    const VectorX<double>& q_seed,
     const VectorX<double>& q_nom,
     const Vector3<double>& pos_tol, double rot_tol,
     VectorX<double>* q_res, std::vector<int>* info,
@@ -183,7 +188,21 @@ bool ConstraintRelaxingIk::SolveIk(
     constraint_array.push_back(&quat_con);
   }
 
-  inverseKin(robot_.get(), q0, q_nom, constraint_array.size(),
+  PostureConstraint posture_con(robot_.get());
+  if (waypoint.joint_angle_tol != 0) {
+    std::vector<int> joint_idx(q0.size());
+    VectorX<double> lb = q0;
+    VectorX<double> ub = q0;
+    for (int i = 0; i < q0.size(); i++) {
+      joint_idx[i] = i;
+      lb[i] -= waypoint.joint_angle_tol;
+      ub[i] += waypoint.joint_angle_tol;
+    }
+    posture_con.setJointLimits(joint_idx.size(), joint_idx.data(), lb, ub);
+    constraint_array.push_back(&posture_con);
+  }
+
+  inverseKin(robot_.get(), q_seed, q_nom, constraint_array.size(),
              constraint_array.data(), ikoptions, q_res, info->data(),
              infeasible_constraints);
 
