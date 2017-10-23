@@ -252,7 +252,6 @@ PickAndPlacePlant::PickAndPlacePlant(
         builder.AddSystem<ConstantVectorSource<double>>(VectorX<double>::Zero(
             iiwa_and_wsg_plant_->get_input_port_iiwa_acceleration_command()
                 .size()));
-    zero_feedforward_acceleration->set_name("zero");
     builder.Connect(
         zero_feedforward_acceleration->get_output_port(),
         iiwa_and_wsg_plant_->get_input_port_iiwa_acceleration_command(i));
@@ -285,10 +284,6 @@ PickAndPlacePlant::PickAndPlacePlant(
     // Export wsg status output port.
     output_port_wsg_status_.push_back(
         builder.ExportOutput(wsg_status_sender->get_output_port(0)));
-
-    // Export iiwa robot_state_t output port.
-    output_port_iiwa_robot_state_.push_back(builder.ExportOutput(
-        iiwa_and_wsg_plant_->get_output_port_iiwa_robot_state_msg(i)));
 
     // Export WSG command input port.
     input_port_wsg_command_.push_back(
