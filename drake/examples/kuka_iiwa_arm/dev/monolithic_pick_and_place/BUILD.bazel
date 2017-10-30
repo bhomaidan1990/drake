@@ -7,6 +7,32 @@ load(
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
 load(":pick_and_place_test.bzl", "pick_and_place_test")
+load("@protobuf//:protobuf.bzl", "cc_proto_library")
+
+cc_proto_library(
+    name = "pick_and_place_configuration_proto",
+    srcs = [
+        "pick_and_place_configuration.proto",
+    ],
+)
+
+drake_cc_library(
+    name = "pick_and_place_configuration_parsing",
+    srcs = [
+        "pick_and_place_configuration_parsing.cc",
+    ],
+    hdrs = [
+        "pick_and_place_configuration_parsing.h",
+    ],
+    deps = [
+        ":pick_and_place_configuration_proto",
+        "//drake/examples/kuka_iiwa_arm/pick_and_place:pick_and_place_configuration",
+        "//drake/common:find_resource",
+        "//drake/common/proto:protobuf",
+        "//drake/manipulation/util:world_sim_tree_builder",
+        "//drake/math:geometric_transform",
+    ],
+)
 
 drake_cc_library(
     name = "kuka_pick_and_place_monolithic",

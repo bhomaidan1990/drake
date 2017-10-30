@@ -1,0 +1,49 @@
+syntax = "proto3";
+
+package drake.examples.kuka_iiwa_arm.monolithic_pick_and_place.proto;
+
+// Next ID: 3
+message Pose {
+    // Position
+    repeated double xyz = 1;
+    // Orientation in SpaceXYZ Euler angles
+    repeated double rpy = 2;
+}
+
+// Next ID: 3
+message OptitrackInfo {
+    int32 id = 1;
+    // Pose of the Optitrack frame relative to the model frame.
+    Pose X_MF = 2;
+}
+
+// Next ID: 4
+message Model {
+    // The name of the model. This should correspond to a key in model_path
+    string name = 1;
+    // The Optitrack information for the model.
+    OptitrackInfo optitrack_info = 2;
+    // The [initial] world-pose of the model base.
+    Pose pose = 3;
+}
+
+// Next ID: 13
+message PickAndPlaceConfiguration {
+    map<string, string> model_path = 1;
+
+    // The tables from/on which the target can be picked/placed.
+    repeated Model table = 3;
+    // The objects that can be picked and placed
+    repeated Model object = 4;
+    // The robots that pick and place
+    repeated Model robot = 5;
+
+    string planning_model_path = 6;
+    string planning_end_effector_name = 7;
+
+    double static_friction_coefficient = 8;
+    double dynamic_friction_coefficient = 9;
+    double v_stiction_tolerance = 10;
+    double stiffness = 11;
+    double dissipation = 12;
+}
