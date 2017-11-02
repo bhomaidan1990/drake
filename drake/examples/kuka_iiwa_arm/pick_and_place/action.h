@@ -147,6 +147,9 @@ class WsgAction : public Action {
    * after an Open / Close command was last issued.
    */
   bool ActionFinished(const WorldState& est_state) const override;
+
+ private:
+  enum { kOpen, kClose } last_command_{kOpen};
 };
 
 }  // namespace pick_and_place
