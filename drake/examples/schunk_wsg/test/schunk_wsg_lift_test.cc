@@ -177,7 +177,7 @@ GTEST_TEST(SchunkWsgLiftTest, BoxLiftTest) {
           BuildLiftTestTree(&lifter_instance_id, &gripper_instance_id));
   plant->set_name("plant");
 
-  ASSERT_GE(plant->get_num_actuators(), 2);
+  ASSERT_EQ(plant->get_num_actuators(), 3);
   ASSERT_EQ(plant->get_num_model_instances(), 3);
 
   // Arbitrary contact parameters.
