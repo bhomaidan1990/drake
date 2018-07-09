@@ -46,6 +46,18 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "kinematic_trajectory_optimization",
+    srcs = ["kinematic_trajectory_optimization.cc"],
+    hdrs = ["kinematic_trajectory_optimization.h"],
+    deps = [
+        "//math:bspline_curve",
+        "@drake//common",
+        "@drake//math:gradient",
+        "@drake//solvers:mathematical_program",
+    ],
+)
+
+drake_cc_library(
     name = "robot_plan_interpolator",
     srcs = ["robot_plan_interpolator.cc"],
     hdrs = ["robot_plan_interpolator.h"],
@@ -90,6 +102,14 @@ drake_cc_googletest(
         "//examples/kuka_iiwa_arm:iiwa_common",
         "//manipulation/util:world_sim_tree_builder",
         "//multibody/benchmarks/kuka_iiwa_robot",
+    ],
+)
+
+drake_cc_googletest(
+    name = "kinematic_trajectory_optimization_test",
+    deps = [
+        ":kinematic_trajectory_optimization",
+        "//solvers:constraint",
     ],
 )
 
