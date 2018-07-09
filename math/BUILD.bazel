@@ -54,6 +54,33 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "bspline_basis",
+    srcs = [
+        "bspline_basis.cc",
+    ],
+    hdrs = [
+        "bspline_basis.h",
+    ],
+    deps = [
+        "//common:symbolic",
+        "//common/trajectories:piecewise_polynomial",
+    ],
+)
+
+drake_cc_library(
+    name = "bspline_curve",
+    srcs = [
+        "bspline_curve.cc",
+    ],
+    hdrs = [
+        "bspline_curve.h",
+    ],
+    deps = [
+        ":bspline_basis",
+    ],
+)
+
+drake_cc_library(
     name = "continuous_algebraic_riccati_equation",
     srcs = ["continuous_algebraic_riccati_equation.cc"],
     hdrs = ["continuous_algebraic_riccati_equation.h"],
@@ -247,6 +274,14 @@ drake_cc_googletest(
         ":barycentric",
         "//common:symbolic",
         "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "bspline_basis_test",
+    deps = [
+        ":bspline_basis",
+        "@drake//common:find_resource",
     ],
 )
 
