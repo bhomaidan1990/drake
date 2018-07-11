@@ -498,8 +498,7 @@ SolutionResult KinematicTrajectoryOptimization::Solve(
                            position_curve_.control_points()[i]);
   }
 
-  SnoptSolver solver;
-  SolutionResult result = solver.Solve(*prog_);
+  SolutionResult result = prog_->Solve();
   drake::log()->info("Solver used: {}", prog_->GetSolverId().value().name());
 
   if (always_update_curve || result == SolutionResult::kSolutionFound ||
