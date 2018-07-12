@@ -35,10 +35,12 @@ std::unique_ptr<RigidBodyTree<double>> MakeRigidBodyTreeForTesting() {
   const std::string table_model_path = drake::FindResourceOrThrow(
       "drake/examples/kuka_iiwa_arm/models/table/extra_heavy_duty_table.sdf");
   WorldSimTreeBuilder<double> tree_builder;
-  tree_builder.StoreDrakeModel("iiwa",
+  tree_builder.StoreDrakeModel(
+      "iiwa",
       "drake/manipulation/models/iiwa_description/urdf/"
       "iiwa14_spheres_collision.urdf");
-  tree_builder.StoreDrakeModel("table",
+  tree_builder.StoreDrakeModel(
+      "table",
       "drake/examples/kuka_iiwa_arm/models/table/extra_heavy_duty_table.sdf");
   tree_builder.AddFixedModelInstance("iiwa", {0, 0, 0});
   tree_builder.AddFixedModelInstance("table", {0, -0.75, -0.3});
@@ -166,8 +168,10 @@ TEST_P(RigidBodyTreeWrapperTests, CalcRelativeTransformTest) {
       Transform<double> X_AB_expected = X_WA_expected.inverse() * X_WB_expected;
       Transform<double> X_AB_actual = this->wrapper_->CalcRelativeTransform(
           q, frame_A->get_name(), frame_B->get_name());
-      EXPECT_TRUE(X_AB_actual.IsNearlyEqualTo(
-          X_AB_expected, std::numeric_limits<double>::epsilon()));
+      EXPECT_TRUE(X_AB_actual
+                      .IsNearlyEqualTo(X_AB_expected,
+                                       std::numeric_limits<double>::epsilon())
+                      .value());
     }
   }
 }
@@ -212,8 +216,10 @@ TEST_P(RigidBodyTreeWrapperTests, MakeRelativePoseConstraintTest) {
       drake::log()->debug("X_AB_0:\n{}", X_AB_0.GetAsMatrix4());
       drake::log()->debug("X_AB_1:\n{}", X_AB_1.GetAsMatrix4());
       EXPECT_TRUE(relative_pose_constraint->CheckSatisfied(q_0));
-      if (X_AB_1.IsNearlyEqualTo(X_AB_0,
-                                 10 * std::numeric_limits<double>::epsilon())) {
+      if (X_AB_1
+              .IsNearlyEqualTo(X_AB_0,
+                               10 * std::numeric_limits<double>::epsilon())
+              .value()) {
         EXPECT_TRUE(relative_pose_constraint->CheckSatisfied(q_1));
       } else {
         EXPECT_FALSE(relative_pose_constraint->CheckSatisfied(q_1));
