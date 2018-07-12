@@ -1,7 +1,7 @@
 # -*- python -*-
 
 load(
-    "@drake//tools/skylark:drake_cc.bzl",
+    "//tools/skylark:drake_cc.bzl",
     "drake_cc_googletest",
     "drake_cc_library",
     "drake_cc_package_library",
@@ -55,9 +55,9 @@ drake_cc_library(
     hdrs = ["kinematic_trajectory_optimization.h"],
     deps = [
         "//math:bspline_curve",
-        "@drake//common",
-        "@drake//math:gradient",
-        "@drake//solvers:mathematical_program",
+        "//common",
+        "//math:gradient",
+        "//solvers:mathematical_program",
     ],
 )
 
