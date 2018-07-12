@@ -66,9 +66,9 @@ drake_cc_library(
     srcs = ["kinematic_tree.cc"],
     hdrs = ["kinematic_tree.h"],
     deps = [
-        "@drake//common:essential",
-        "@drake//math:geometric_transform",
-        "@drake//solvers:constraint",
+        "//common:essential",
+        "//math:geometric_transform",
+        "//solvers:constraint",
     ],
 )
 
