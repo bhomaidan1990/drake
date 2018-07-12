@@ -180,6 +180,7 @@ drake_cc_googletest(
     # "foo_test" run
     #   $ ./bazel-bin/path/to/foo_test --gtest_list_tests | grep "  \w" | wc -l
     shard_count = 50,
+    tags = ["snopt"],
     deps = [
         ":kinematic_tree",
         ":optimize_manipulation_trajectory",
