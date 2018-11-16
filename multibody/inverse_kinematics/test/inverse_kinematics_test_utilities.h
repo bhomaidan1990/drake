@@ -6,10 +6,12 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/geometry/scene_graph.h"
 #include "drake/math/autodiff_gradient.h"
 #include "drake/multibody/benchmarks/kuka_iiwa_robot/make_kuka_iiwa_model.h"
 #include "drake/multibody/multibody_tree/multibody_plant/multibody_plant.h"
 #include "drake/multibody/multibody_tree/multibody_tree.h"
+#include "drake/systems/framework/diagram.h"
 
 namespace drake {
 namespace multibody {
@@ -63,13 +65,7 @@ class IiwaKinematicConstraintTest : public ::testing::Test {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(IiwaKinematicConstraintTest)
 
-  IiwaKinematicConstraintTest()
-      : iiwa_autodiff_(benchmarks::kuka_iiwa_robot::MakeKukaIiwaModel<
-            AutoDiffXd>(true /* finalized model. */)),
-        iiwa_double_(benchmarks::kuka_iiwa_robot::MakeKukaIiwaModel<double>(
-            true /* finalized model. */)),
-        context_autodiff_(iiwa_autodiff_.CreateDefaultContext()),
-        context_double_(iiwa_double_.CreateDefaultContext()) {}
+  IiwaKinematicConstraintTest();
 
   FrameIndex GetFrameIndex(const std::string& name) {
     // TODO(hongkai.dai): call GetFrameByName() directly.
@@ -77,6 +73,10 @@ class IiwaKinematicConstraintTest : public ::testing::Test {
   }
 
  protected:
+  std::unique_ptr<systems::Diagram<double>> diagram_{};
+  multibody_plant::MultibodyPlant<double>* plant_{};
+  geometry::SceneGraph<double>* scene_graph_{};
+  std::unique_ptr<systems::Context<double>> context_;
   MultibodyTreeSystem<AutoDiffXd> iiwa_autodiff_;
   MultibodyTreeSystem<double> iiwa_double_;
   std::unique_ptr<systems::Context<AutoDiffXd>> context_autodiff_;
