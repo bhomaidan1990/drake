@@ -2,6 +2,11 @@
 
 #include "drake/common/find_resource.h"
 #include "drake/multibody/multibody_tree/parsing/multibody_plant_sdf_parser.h"
+#include "drake/systems/framework/diagram_builder.h"
+
+using drake::geometry::SceneGraph;
+using drake::multibody::multibody_plant::MultibodyPlant;
+
 namespace drake {
 namespace multibody {
 namespace {
@@ -23,6 +28,30 @@ std::unique_ptr<T> ConstructTwoFreeBodiesHelper() {
   return model;
 }
 }  // namespace
+
+namespace internal {
+IiwaKinematicConstraintTest::IiwaKinematicConstraintTest()
+    : iiwa_autodiff_(benchmarks::kuka_iiwa_robot::MakeKukaIiwaModel<AutoDiffXd>(
+          true /* finalized model. */)),
+      iiwa_double_(benchmarks::kuka_iiwa_robot::MakeKukaIiwaModel<double>(
+          true /* finalized model. */)),
+      context_autodiff_(iiwa_autodiff_.CreateDefaultContext()),
+      context_double_(iiwa_double_.CreateDefaultContext()) {
+  systems::DiagramBuilder<double> builder{};
+  plant_ = builder.AddSystem<MultibodyPlant<double>>();
+  plant_->RegisterAsSourceForSceneGraph(
+      builder.AddSystem<SceneGraph<double>>());
+  parsing::AddModelFromSdfFile(
+      FindResourceOrThrow("drake/manipulation/models/iiwa_description/sdf/"
+                          "iiwa14_no_collision.sdf"),
+      "iiwa", plant_);
+  plant_->Finalize();
+
+  diagram_ = builder.Build();
+  context_ = diagram_->CreateDefaultContext();
+}
+}
+
 template <typename T>
 std::unique_ptr<MultibodyTree<T>> ConstructTwoFreeBodies() {
   return ConstructTwoFreeBodiesHelper<MultibodyTree<T>>();
