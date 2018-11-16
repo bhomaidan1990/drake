@@ -45,7 +45,7 @@ drake_cc_library(
     deps = [
         "//math:geometric_transform",
         "//math:gradient",
-        "//multibody/multibody_tree",
+        "//multibody/multibody_tree/multibody_plant:multibody_plant",
         "//solvers:constraint",
     ],
 )

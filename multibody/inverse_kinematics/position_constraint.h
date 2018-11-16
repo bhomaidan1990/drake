@@ -2,7 +2,7 @@
 
 #include <memory>
 
-#include "drake/multibody/multibody_tree/multibody_tree.h"
+#include "drake/multibody/multibody_tree/multibody_plant/multibody_plant.h"
 #include "drake/solvers/constraint.h"
 
 namespace drake {
@@ -30,13 +30,14 @@ class PositionConstraint : public solvers::Constraint {
   // be alive during the lifetime of this constraint.
   // TODO(hongkai.dai): use MultibodyTree<double> and LeafContext<double> when
   // MBT provides the API for computing analytical Jacobian.
-  PositionConstraint(const multibody::MultibodyTree<AutoDiffXd>& tree,
-                     const FrameIndex& frameB_idx,
-                     const Eigen::Ref<const Eigen::Vector3d>& p_BQ,
-                     const FrameIndex& frameA_idx,
-                     const Eigen::Ref<const Eigen::Vector3d>& p_AQ_lower,
-                     const Eigen::Ref<const Eigen::Vector3d>& p_AQ_upper,
-                     MultibodyTreeContext<AutoDiffXd>* context);
+  PositionConstraint(
+      const multibody_plant::MultibodyPlant<double>& plant,
+      const FrameIndex& frameB_idx,
+      const Eigen::Ref<const Eigen::Vector3d>& p_BQ,
+      const FrameIndex& frameA_idx,
+      const Eigen::Ref<const Eigen::Vector3d>& p_AQ_lower,
+      const Eigen::Ref<const Eigen::Vector3d>& p_AQ_upper,
+      systems::Context<double>* context);
 
   ~PositionConstraint() override {}
 
@@ -53,11 +54,11 @@ class PositionConstraint : public solvers::Constraint {
         "PositionConstraint::DoEval() does not work for symbolic variables.");
   }
 
-  const MultibodyTree<AutoDiffXd>& tree_;
-  const Frame<AutoDiffXd>& frameB_;
-  const Frame<AutoDiffXd>& frameA_;
+  const multibody_plant::MultibodyPlant<double>& plant_;
+  const Frame<double>& frameB_;
+  const Frame<double>& frameA_;
   const Eigen::Vector3d p_BQ_;
-  MultibodyTreeContext<AutoDiffXd>* const context_;
+  systems::Context<double>* const context_;
 };
 }  // namespace internal
 }  // namespace multibody

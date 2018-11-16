@@ -20,6 +20,17 @@ bool AreAutoDiffVecXdEqual(const Eigen::Ref<const AutoDiffVecXd>& a,
 /**
  * Check if the generalized positions in @p mbt_context are the same as @p q.
  * If they are not the same, then reset @p mbt_context's generalized positions
+ * to q. Otherwise, leave @p context unchanged.
+ * The intention is to avoid dirtying the computation cache, given it is
+ * ticket-based rather than hash-based.
+ */
+void UpdateContextConfiguration(systems::Context<double>* context,
+                                const multibody_plant::MultibodyPlant<double>& plant,
+                                const Eigen::Ref<const VectorX<AutoDiffXd>>& q) {};
+
+/**
+ * Check if the generalized positions in @p mbt_context are the same as @p q.
+ * If they are not the same, then reset @p mbt_context's generalized positions
  * to q. Otherwise, leave @p mbt_context unchanged.
  * The intention is to avoid dirtying the computation cache, given it is
  * ticket-based rather than hash-based.
