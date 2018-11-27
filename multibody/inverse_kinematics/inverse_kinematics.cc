@@ -53,9 +53,9 @@ InverseKinematics::AddOrientationConstraint(
     const Frame<double>& frameAbar, const math::RotationMatrix<double>& R_AbarA,
     const Frame<double>& frameBbar, const math::RotationMatrix<double>& R_BbarB,
     double angle_bound) {
-  auto constraint = std::make_shared<internal::OrientationConstraint>(
-      system_.tree(), frameAbar.index(), R_AbarA, frameBbar.index(), R_BbarB,
-      angle_bound, get_mutable_context_autodiff());
+  auto constraint =
+      std::make_shared<internal::OrientationConstraint>(plant_, frameAbar,
+          R_AbarA, frameBbar, R_BbarB, angle_bound, get_mutable_context());
   return prog_->AddConstraint(constraint, q_);
 }
 
