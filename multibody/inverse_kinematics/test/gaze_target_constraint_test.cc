@@ -6,16 +6,14 @@ namespace drake {
 namespace multibody {
 namespace internal {
 TEST_F(IiwaKinematicConstraintTest, GazeTargetConstraint) {
-  const FrameIndex frameA_idx{GetFrameIndex("iiwa_link_7")};
+  const Frame<double>& frameA = plant_->GetFrameByName("iiwa_link_7");
+  const Frame<double>& frameB = plant_->GetFrameByName("iiwa_link_3");
   const Eigen::Vector3d p_AS(0.1, 0.2, 0.3);
   const Eigen::Vector3d n_A(-0.1, 0.3, 0.4);
-  const FrameIndex frameB_idx{GetFrameIndex("iiwa_link_3")};
   const Eigen::Vector3d p_BT(0.4, 0.2, -0.3);
   const double cone_half_angle{0.1 * M_PI};
-  GazeTargetConstraint constraint(
-      iiwa_autodiff_.tree(), frameA_idx, p_AS, n_A, frameB_idx, p_BT,
-      cone_half_angle,
-      dynamic_cast<MultibodyTreeContext<AutoDiffXd>*>(context_autodiff_.get()));
+  GazeTargetConstraint constraint(*plant_, frameA, p_AS, n_A, frameB, p_BT,
+      cone_half_angle, plant_context_);
 
   EXPECT_EQ(constraint.num_constraints(), 2);
   EXPECT_EQ(constraint.num_vars(), iiwa_autodiff_.tree().num_positions());
@@ -32,11 +30,14 @@ TEST_F(IiwaKinematicConstraintTest, GazeTargetConstraint) {
   AutoDiffVecXd y_autodiff;
   constraint.Eval(q_autodiff, &y_autodiff);
 
+  auto mbt_context_autodiff =
+      dynamic_cast<MultibodyTreeContext<AutoDiffXd>*>(context_autodiff_.get());
+  mbt_context_autodiff->get_mutable_positions() = q_autodiff;
   Vector3<AutoDiffXd> p_AT;
-  iiwa_autodiff_.tree().CalcPointsPositions(
-      *context_autodiff_, iiwa_autodiff_.tree().get_frame(frameB_idx),
-      p_BT.cast<AutoDiffXd>(), iiwa_autodiff_.tree().get_frame(frameA_idx),
-      &p_AT);
+  iiwa_autodiff_.tree().CalcPointsPositions(*context_autodiff_,
+      iiwa_autodiff_.tree().GetFrameByName(frameB.name()),
+      p_BT.cast<AutoDiffXd>(),
+      iiwa_autodiff_.tree().GetFrameByName(frameA.name()), &p_AT);
   const Vector3<AutoDiffXd> p_ST_A = p_AT - p_AS;
   Vector2<AutoDiffXd> y_autodiff_expected;
   const Eigen::Vector3d n_A_normalized = n_A.normalized();
@@ -46,7 +47,8 @@ TEST_F(IiwaKinematicConstraintTest, GazeTargetConstraint) {
       std::pow(std::cos(cone_half_angle), 2) * p_ST_A.squaredNorm();
   CompareAutoDiffVectors(y_autodiff, y_autodiff_expected, 1E-12);
 }
-
+// TODO(avalenzu): Re-enable once we allow nv != nq.
+#if (0)
 TEST_F(TwoFreeBodiesConstraintTest, GazeTargetConstraint) {
   // All the numbers are chosen arbitrarily.
   const Eigen::Vector3d p_AS(0.2, -0.1, 0.3);
@@ -86,28 +88,22 @@ TEST_F(TwoFreeBodiesConstraintTest, GazeTargetConstraint) {
     EXPECT_FALSE(bad_constraint.CheckSatisfied(q));
   }
 }
-
+#endif
 TEST_F(IiwaKinematicConstraintTest, GazeTargetConstraintConstructorError) {
   // Check if the constructor for GazeTargetConstraint will throw errors if the
   // inputs are incorrect.
   const Eigen::Vector3d p_AS(1, 2, 3);
   const Eigen::Vector3d p_BT(2, 3, 4);
-  const FrameIndex frameA_index = GetFrameIndex("iiwa_link_3");
-  const FrameIndex frameB_index = GetFrameIndex("iiwa_link_4");
+  const Frame<double>& frameA = plant_->GetFrameByName("iiwa_link_3");
+  const Frame<double>& frameB = plant_->GetFrameByName("iiwa_link_4");
   // zero n_A
-  EXPECT_THROW(
-      GazeTargetConstraint(iiwa_autodiff_.tree(), frameA_index, p_AS,
-                           Eigen::Vector3d::Zero(), frameB_index, p_BT, 0.1,
-                           dynamic_cast<MultibodyTreeContext<AutoDiffXd>*>(
-                               context_autodiff_.get())),
+  EXPECT_THROW(GazeTargetConstraint(*plant_, frameA, p_AS,
+                   Eigen::Vector3d::Zero(), frameB, p_BT, 0.1, plant_context_),
       std::invalid_argument);
 
   // wrong cone_half_angle
-  EXPECT_THROW(
-      GazeTargetConstraint(iiwa_autodiff_.tree(), frameA_index, p_AS,
-                           Eigen::Vector3d::Ones(), frameB_index, p_BT, -0.1,
-                           dynamic_cast<MultibodyTreeContext<AutoDiffXd>*>(
-                               context_autodiff_.get())),
+  EXPECT_THROW(GazeTargetConstraint(*plant_, frameA, p_AS,
+                   Eigen::Vector3d::Ones(), frameB, p_BT, -0.1, plant_context_),
       std::invalid_argument);
 }
 

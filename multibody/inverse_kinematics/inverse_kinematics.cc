@@ -64,9 +64,8 @@ InverseKinematics::AddGazeTargetConstraint(
     const Frame<double>& frameA, const Eigen::Ref<const Eigen::Vector3d>& p_AS,
     const Eigen::Ref<const Eigen::Vector3d>& n_A, const Frame<double>& frameB,
     const Eigen::Ref<const Eigen::Vector3d>& p_BT, double cone_half_angle) {
-  auto constraint = std::make_shared<internal::GazeTargetConstraint>(
-      system_.tree(), frameA.index(), p_AS, n_A, frameB.index(), p_BT,
-      cone_half_angle, get_mutable_context_autodiff());
+  auto constraint = std::make_shared<internal::GazeTargetConstraint>(plant_,
+      frameA, p_AS, n_A, frameB, p_BT, cone_half_angle, get_mutable_context());
   return prog_->AddConstraint(constraint, q_);
 }
 
