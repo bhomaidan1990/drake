@@ -2051,6 +2051,61 @@ class MultibodyTree {
       const Frame<T>& frame_F, const Eigen::Ref<const Vector3<T>>& p_FQ,
       EigenPtr<MatrixX<T>> Jv_WFq) const;
 
+  /// Computes the analytical Jacobian for a point moving with a given frame.
+  /// Consider a point Q instantaneously moving with a frame B with position
+  /// `p_BQ` in that frame. Frame `Bq` is the frame defined by shifting frame B
+  /// with origin at `Bo` to a new origin at point Q. The spatial
+  /// velocity `V_ABq_E` of frame `Bq` measured in a frame A and expressed in a
+  /// frame E relates to the generalized positions of the system by the
+  /// analytical Jacobian `Jq_ABq_E(q)` by: <pre>
+  ///   V_ABq_E(q, q̇) = Jq_ABq_E(q)⋅q̇
+  /// </pre>
+  /// This method computes the analytical Jacobian `Jq_ABq_E(q)`.
+  /// In the above, note that the "q" in `Bq` represents the point "Q" while
+  /// the other uses of q alone refer to the generalized coordinates.
+  ///
+  /// @param[in] context
+  ///   The context containing the state of the model. It stores the
+  ///   generalized positions q.
+  /// @param[in] frame_B
+  ///   The position `p_BQ` of point Q is measured and expressed in this frame.
+  /// @param[in] p_BQ
+  ///   The (fixed) position of the origin `Q` of frame `Bq` as measured and
+  ///   expressed in frame B.
+  /// @param[in] frame_A
+  ///   The second frame in which the spatial velocity `V_ABq` is measured and
+  ///   expressed.
+  /// @param[in] frame_E
+  ///   Frame in which the velocity V_ABq_E is expressed.
+  /// @param[out] Jq_ABq_E
+  ///   The analytical Jacobian `Jq_ABq_E(q)`, function of the generalized
+  ///   positions q only. This Jacobian relates to the spatial velocity
+  ///   `V_ABq_E` of frame `Bq` in A and expressed in E by: <pre>
+  ///     V_ABq_E(q, q̇) = Jq_ABq_E(q)⋅q̇
+  ///   </pre>
+  ///   Therefore `Jq_ABq_E` is a matrix of size `6 x nq`, with `nq`
+  ///   the number of generalized positions. On input, matrix `Jq_ABq_E`
+  ///   **must** have size `6 x nq` or this method throws an exception.
+  ///   Given a `6 x nq` spatial Jacobian Jq, let Jqr be the `3 x nq`
+  ///   rotational part (top 3 rows) and Jqt be the translational part
+  ///   (bottom 3 rows). These can be obtained as follows: <pre>
+  ///     Jqr_ABq = Jq_ABq.topRows<3>();
+  ///     Jqt_ABq = Jq_ABq.bottomRows<3>();
+  ///   </pre>
+  ///   This ordering is consistent with the internal storage of the
+  ///   SpatialVelocity class. Therefore the following operations results in
+  ///   a valid spatial velocity: <pre>
+  ///     SpatialVelocity<double> V_ABq(Jq_ABq * q̇);
+  ///   </pre>
+  ///
+  /// @throws std::exception if `J_ABq` is nullptr or if it is not of size
+  ///   `6 x nq`.
+  void CalcRelativeFrameAnalyticalJacobian(
+      const systems::Context<T>& context,
+      const Frame<T>& frame_B, const Eigen::Ref<const Vector3<T>>& p_BQ,
+      const Frame<T>& frame_A, const Frame<T>& frame_E,
+      EigenPtr<MatrixX<T>> Jv_ABq_E) const;
+
   /// Computes the geometric Jacobian for a point moving with a given frame.
   /// Consider a point Q instantaneously moving with a frame B with position
   /// `p_BQ` in that frame. Frame `Bq` is the frame defined by shifting frame B
@@ -3045,6 +3100,15 @@ class MultibodyTree {
       const Eigen::Ref<const MatrixX<T>>& p_WQ_list,
       bool from_qdot,
       EigenPtr<MatrixX<T>> Jr_WFq, EigenPtr<MatrixX<T>> Jt_WFq) const;
+
+  // Helper method that computes either the analytical (if `from_qdot` is true)
+  // or geometric (if `from_qdot` is false) frame Jacobian and stores it in
+  // `J_ABq_E`. See documentation for CalcRelativeFrameAnalyticalJacobian() and
+  // CalcRelativeFrameGeometricJacobian() for more details.
+  void CalcRelativeFrameJacobian(const systems::Context<T>& context,
+      const Frame<T>& frame_B, const Eigen::Ref<const Vector3<T>>& p_BQ,
+      const Frame<T>& frame_A, const Frame<T>& frame_E, bool from_qdot,
+      EigenPtr<MatrixX<T>> J_ABq_E) const;
 
   // Implementation for CalcMassMatrixViaInverseDynamics().
   // It assumes:
