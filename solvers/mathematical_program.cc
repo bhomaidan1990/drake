@@ -421,28 +421,28 @@ Binding<Constraint> MathematicalProgram::AddConstraint(
 Binding<Constraint> MathematicalProgram::AddConstraint(const Expression& e,
                                                        const double lb,
                                                        const double ub) {
-  return AddConstraint(internal::ParseConstraint(e, lb, ub));
+  return AddConstraint(ParseConstraint(e, lb, ub));
 }
 
 Binding<Constraint> MathematicalProgram::AddConstraint(
     const Eigen::Ref<const VectorX<Expression>>& v,
     const Eigen::Ref<const Eigen::VectorXd>& lb,
     const Eigen::Ref<const Eigen::VectorXd>& ub) {
-  return AddConstraint(internal::ParseConstraint(v, lb, ub));
+  return AddConstraint(ParseConstraint(v, lb, ub));
 }
 
 Binding<Constraint> MathematicalProgram::AddConstraint(
     const set<Formula>& formulas) {
-  return AddConstraint(internal::ParseConstraint(formulas));
+  return AddConstraint(ParseConstraint(formulas));
 }
 
 Binding<Constraint> MathematicalProgram::AddConstraint(const Formula& f) {
-  return AddConstraint(internal::ParseConstraint(f));
+  return AddConstraint(ParseConstraint(f));
 }
 
 Binding<LinearConstraint> MathematicalProgram::AddLinearConstraint(
     const Expression& e, const double lb, const double ub) {
-  Binding<Constraint> binding = internal::ParseConstraint(e, lb, ub);
+  Binding<Constraint> binding = ParseConstraint(e, lb, ub);
   Constraint* constraint = binding.evaluator().get();
   if (dynamic_cast<LinearConstraint*>(constraint)) {
     return AddConstraint(
@@ -458,7 +458,7 @@ Binding<LinearConstraint> MathematicalProgram::AddLinearConstraint(
     const Eigen::Ref<const VectorX<Expression>>& v,
     const Eigen::Ref<const Eigen::VectorXd>& lb,
     const Eigen::Ref<const Eigen::VectorXd>& ub) {
-  Binding<Constraint> binding = internal::ParseConstraint(v, lb, ub);
+  Binding<Constraint> binding = ParseConstraint(v, lb, ub);
   Constraint* constraint = binding.evaluator().get();
   if (dynamic_cast<LinearConstraint*>(constraint)) {
     return AddConstraint(
@@ -472,7 +472,7 @@ Binding<LinearConstraint> MathematicalProgram::AddLinearConstraint(
 
 Binding<LinearConstraint> MathematicalProgram::AddLinearConstraint(
     const Formula& f) {
-  Binding<Constraint> binding = internal::ParseConstraint(f);
+  Binding<Constraint> binding = ParseConstraint(f);
   Constraint* constraint = binding.evaluator().get();
   if (dynamic_cast<LinearConstraint*>(constraint)) {
     return AddConstraint(

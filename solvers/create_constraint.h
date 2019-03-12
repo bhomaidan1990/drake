@@ -16,8 +16,6 @@
 namespace drake {
 namespace solvers {
 
-namespace internal {
-
 // TODO(eric.cousineau): Use Eigen::Ref more pervasively when no temporaries
 // are allocated (or if it doesn't matter if they are).
 
@@ -41,18 +39,6 @@ inline Binding<Constraint> ParseConstraint(
   return ParseConstraint(Vector1<symbolic::Expression>(e), Vector1<double>(lb),
                          Vector1<double>(ub));
 }
-
-/**
- * Parses the constraint lb <= e <= ub to linear constraint types, including
- * BoundingBoxConstraint, LinearEqualityConstraint, and LinearConstraint. If @p
- * e is not a linear expression, then return a null pointer.
- * If the constraint lb <= e <= ub can be parsed as a BoundingBoxConstraint,
- * then we return a BoundingBoxConstraint pointer. For example, the constraint
- * 1 <= 2 * x + 3 <= 4 is equivalent to the bounding box constraint -1 <= x <=
- * 0.5. Hence we will return the BoundingBoxConstraint in this case.
- */
-std::unique_ptr<Binding<Constraint>> MaybeParseLinearConstraint(
-    const symbolic::Expression& e, double lb, double ub);
 
 /*
  * Assist MathematicalProgram::AddLinearConstraint(...).
@@ -118,6 +104,28 @@ ParseConstraint(const Eigen::ArrayBase<Derived>& formulas) {
   }
   return ParseConstraint(v, lb, ub);
 }
+
+template <typename Derived>
+typename std::enable_if<is_eigen_vector_of<Derived, symbolic::Formula>::value,
+                        Binding<Constraint>>::type
+ParseConstraint(const Eigen::MatrixBase<Derived>&) {
+  // TODO(eric.cousineau): Implement this.
+  throw std::runtime_error("Not implemented");
+}
+
+namespace internal {
+
+/**
+ * Parses the constraint lb <= e <= ub to linear constraint types, including
+ * BoundingBoxConstraint, LinearEqualityConstraint, and LinearConstraint. If @p
+ * e is not a linear expression, then return a null pointer.
+ * If the constraint lb <= e <= ub can be parsed as a BoundingBoxConstraint,
+ * then we return a BoundingBoxConstraint pointer. For example, the constraint
+ * 1 <= 2 * x + 3 <= 4 is equivalent to the bounding box constraint -1 <= x <=
+ * 0.5. Hence we will return the BoundingBoxConstraint in this case.
+ */
+std::unique_ptr<Binding<Constraint>> MaybeParseLinearConstraint(
+    const symbolic::Expression& e, double lb, double ub);
 
 /*
  * Assist functionality for ParseLinearEqualityConstraint(...).
@@ -271,14 +279,6 @@ Binding<RotatedLorentzConeConstraint> ParseRotatedLorentzConeConstraint(
 //   // ...
 //   return std::make_tuple(linear_binding, psd_binding);
 // }
-
-template <typename Derived>
-typename std::enable_if<is_eigen_vector_of<Derived, symbolic::Formula>::value,
-                        Binding<Constraint>>::type
-ParseConstraint(const Eigen::MatrixBase<Derived>&) {
-  // TODO(eric.cousineau): Implement this.
-  throw std::runtime_error("Not implemented");
-}
 
 }  // namespace internal
 }  // namespace solvers

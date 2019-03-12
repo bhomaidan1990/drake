@@ -10,7 +10,6 @@
 
 namespace drake {
 namespace solvers {
-namespace internal {
 
 using std::find;
 using std::isfinite;
@@ -35,7 +34,6 @@ using internal::ExtractAndAppendVariablesFromExpression;
 using internal::ExtractVariablesFromExpression;
 using internal::SymbolicError;
 
-
 Binding<Constraint> ParseConstraint(
     const Eigen::Ref<const VectorX<Expression>>& v,
     const Eigen::Ref<const Eigen::VectorXd>& lb,
@@ -57,11 +55,11 @@ Binding<Constraint> ParseConstraint(
   }
   if (!is_linear) {
     auto constraint = make_shared<ExpressionConstraint>(v, lb, ub);
-    return CreateBinding(constraint, constraint->vars());
+    return internal::CreateBinding(constraint, constraint->vars());
   }  // else, continue on to linear-specific version below.
 
   if ((ub-lb).isZero()) {
-    return ParseLinearEqualityConstraint(v, lb);
+    return internal::ParseLinearEqualityConstraint(v, lb);
   }
 
   // Setup map_var_to_index and var_vec.
@@ -125,83 +123,12 @@ Binding<Constraint> ParseConstraint(
       DRAKE_DEMAND(!std::isnan(new_lb(i)));
       DRAKE_DEMAND(!std::isnan(new_ub(i)));
     }
-    return CreateBinding(make_shared<BoundingBoxConstraint>(new_lb, new_ub),
-                         bounding_box_x);
+    return internal::CreateBinding(
+        make_shared<BoundingBoxConstraint>(new_lb, new_ub), bounding_box_x);
   }
 
-  return CreateBinding(make_shared<LinearConstraint>(A, new_lb, new_ub), vars);
-}
-
-std::unique_ptr<Binding<Constraint>> MaybeParseLinearConstraint(
-    const symbolic::Expression& e, double lb, double ub) {
-  if (!e.is_polynomial()) {
-    return std::unique_ptr<Binding<Constraint>>{nullptr};
-  }
-  const Polynomial p{e};
-  if (p.TotalDegree() > 1) {
-    return std::unique_ptr<Binding<Constraint>>{nullptr};
-  }
-  // If p only has one indeterminates, then we can always return a bounding box
-  // constraint.
-  if (p.indeterminates().size() == 1) {
-    // We decompose the polynomial `p` into `constant_term + coeff * var`.
-    double coeff = 0;
-    double constant_term = 0;
-    for (const auto& term : p.monomial_to_coefficient_map()) {
-      if (term.first.total_degree() == 0) {
-        constant_term += get_constant_value(term.second);
-      } else {
-        coeff += get_constant_value(term.second);
-      }
-    }
-    // coeff should not be 0. The symbolic polynomial should be able to detect
-    // when the coefficient is 0, and remove it from
-    // monomial_to_coefficient_map.
-    DRAKE_DEMAND(coeff != 0);
-    double var_lower{}, var_upper{};
-    if (coeff > 0) {
-      var_lower = (lb - constant_term) / coeff;
-      var_upper = (ub - constant_term) / coeff;
-    } else {
-      var_lower = (ub - constant_term) / coeff;
-      var_upper = (lb - constant_term) / coeff;
-    }
-    return std::make_unique<Binding<Constraint>>(
-        std::make_shared<BoundingBoxConstraint>(Vector1d(var_lower),
-                                                Vector1d(var_upper)),
-        Vector1<symbolic::Variable>(*(p.indeterminates().begin())));
-  }
-  VectorX<symbolic::Variable> bound_variables(p.indeterminates().size());
-  std::unordered_map<symbolic::Variable::Id, int> map_var_to_index;
-  int index = 0;
-  for (const auto& var : p.indeterminates()) {
-    bound_variables(index) = var;
-    map_var_to_index.emplace(var.get_id(), index++);
-  }
-  Eigen::RowVectorXd a(p.indeterminates().size());
-  a.setZero();
-  double lower = lb;
-  double upper = ub;
-  for (const auto& term : p.monomial_to_coefficient_map()) {
-    if (term.first.total_degree() == 0) {
-      const double coeff = get_constant_value(term.second);
-      lower -= coeff;
-      upper -= coeff;
-    } else {
-      const int var_index =
-          map_var_to_index.at(term.first.GetVariables().begin()->get_id());
-      a(var_index) = get_constant_value(term.second);
-    }
-  }
-  if (lower == upper) {
-    return std::make_unique<Binding<Constraint>>(
-        std::make_shared<LinearEqualityConstraint>(a, Vector1d(lower)),
-        bound_variables);
-  } else {
-    return std::make_unique<Binding<Constraint>>(
-        std::make_shared<LinearConstraint>(a, Vector1d(lower), Vector1d(upper)),
-        bound_variables);
-  }
+  return internal::CreateBinding(
+      make_shared<LinearConstraint>(A, new_lb, new_ub), vars);
 }
 
 namespace {
@@ -376,7 +303,7 @@ Binding<Constraint> ParseConstraint(const set<Formula>& formulas) {
     ++i;
   }
   if (are_all_formulas_equal && is_linear) {
-    return ParseLinearEqualityConstraint(v, lb);
+    return internal::ParseLinearEqualityConstraint(v, lb);
   } else {
     return ParseConstraint(v, lb, ub);
   }
@@ -413,6 +340,80 @@ Binding<Constraint> ParseConstraint(const Formula& f) {
       << " which is neither a relational formula using one of {==, <=, >=} "
          "operators nor a conjunction of those relational formulas.";
   throw runtime_error(oss.str());
+}
+
+namespace internal {
+
+std::unique_ptr<Binding<Constraint>> MaybeParseLinearConstraint(
+    const symbolic::Expression& e, double lb, double ub) {
+  if (!e.is_polynomial()) {
+    return std::unique_ptr<Binding<Constraint>>{nullptr};
+  }
+  const Polynomial p{e};
+  if (p.TotalDegree() > 1) {
+    return std::unique_ptr<Binding<Constraint>>{nullptr};
+  }
+  // If p only has one indeterminates, then we can always return a bounding box
+  // constraint.
+  if (p.indeterminates().size() == 1) {
+    // We decompose the polynomial `p` into `constant_term + coeff * var`.
+    double coeff = 0;
+    double constant_term = 0;
+    for (const auto& term : p.monomial_to_coefficient_map()) {
+      if (term.first.total_degree() == 0) {
+        constant_term += get_constant_value(term.second);
+      } else {
+        coeff += get_constant_value(term.second);
+      }
+    }
+    // coeff should not be 0. The symbolic polynomial should be able to detect
+    // when the coefficient is 0, and remove it from
+    // monomial_to_coefficient_map.
+    DRAKE_DEMAND(coeff != 0);
+    double var_lower{}, var_upper{};
+    if (coeff > 0) {
+      var_lower = (lb - constant_term) / coeff;
+      var_upper = (ub - constant_term) / coeff;
+    } else {
+      var_lower = (ub - constant_term) / coeff;
+      var_upper = (lb - constant_term) / coeff;
+    }
+    return std::make_unique<Binding<Constraint>>(
+        std::make_shared<BoundingBoxConstraint>(Vector1d(var_lower),
+                                                Vector1d(var_upper)),
+        Vector1<symbolic::Variable>(*(p.indeterminates().begin())));
+  }
+  VectorX<symbolic::Variable> bound_variables(p.indeterminates().size());
+  std::unordered_map<symbolic::Variable::Id, int> map_var_to_index;
+  int index = 0;
+  for (const auto& var : p.indeterminates()) {
+    bound_variables(index) = var;
+    map_var_to_index.emplace(var.get_id(), index++);
+  }
+  Eigen::RowVectorXd a(p.indeterminates().size());
+  a.setZero();
+  double lower = lb;
+  double upper = ub;
+  for (const auto& term : p.monomial_to_coefficient_map()) {
+    if (term.first.total_degree() == 0) {
+      const double coeff = get_constant_value(term.second);
+      lower -= coeff;
+      upper -= coeff;
+    } else {
+      const int var_index =
+          map_var_to_index.at(term.first.GetVariables().begin()->get_id());
+      a(var_index) = get_constant_value(term.second);
+    }
+  }
+  if (lower == upper) {
+    return std::make_unique<Binding<Constraint>>(
+        std::make_shared<LinearEqualityConstraint>(a, Vector1d(lower)),
+        bound_variables);
+  } else {
+    return std::make_unique<Binding<Constraint>>(
+        std::make_shared<LinearConstraint>(a, Vector1d(lower), Vector1d(upper)),
+        bound_variables);
+  }
 }
 
 Binding<LinearEqualityConstraint> ParseLinearEqualityConstraint(

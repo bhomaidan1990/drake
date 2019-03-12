@@ -1197,7 +1197,7 @@ class MathematicalProgram {
       is_eigen_scalar_same<Derived, symbolic::Formula>::value,
       Binding<Constraint>>::type
   AddConstraint(const Eigen::ArrayBase<Derived>& formulas) {
-    return AddConstraint(internal::ParseConstraint(formulas));
+    return AddConstraint(ParseConstraint(formulas));
   }
 
   /**
@@ -1373,7 +1373,7 @@ class MathematicalProgram {
       is_eigen_scalar_same<Derived, symbolic::Formula>::value,
       Binding<LinearConstraint>>::type
   AddLinearConstraint(const Eigen::ArrayBase<Derived>& formulas) {
-    Binding<Constraint> binding = internal::ParseConstraint(formulas);
+    Binding<Constraint> binding = ParseConstraint(formulas);
     Constraint* constraint = binding.evaluator().get();
     if (dynamic_cast<LinearConstraint*>(constraint)) {
       return AddConstraint(
