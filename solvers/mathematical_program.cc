@@ -377,7 +377,7 @@ Binding<PolynomialCost> MathematicalProgram::AddPolynomialCost(
 }
 
 Binding<Cost> MathematicalProgram::AddCost(const Expression& e) {
-  return AddCost(internal::ParseCost(e));
+  return AddCost(ParseCost(e));
 }
 
 Binding<Constraint> MathematicalProgram::AddConstraint(

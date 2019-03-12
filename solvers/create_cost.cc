@@ -10,7 +10,6 @@
 
 namespace drake {
 namespace solvers {
-namespace internal {
 
 using std::make_shared;
 using std::numeric_limits;
@@ -42,8 +41,8 @@ Binding<QuadraticCost> DoParseQuadraticCost(
   Eigen::VectorXd b(vars_vec.size());
   double constant_term;
   DecomposeQuadraticPolynomial(poly, map_var_to_index, &Q, &b, &constant_term);
-  return CreateBinding(make_shared<QuadraticCost>(Q, b, constant_term),
-                       vars_vec);
+  return internal::CreateBinding(
+      make_shared<QuadraticCost>(Q, b, constant_term), vars_vec);
 }
 
 Binding<LinearCost> DoParseLinearCost(
@@ -53,12 +52,35 @@ Binding<LinearCost> DoParseLinearCost(
   Eigen::RowVectorXd c(vars_vec.size());
   double constant_term{};
   DecomposeLinearExpression(e, map_var_to_index, c, &constant_term);
-  return CreateBinding(make_shared<LinearCost>(c.transpose(), constant_term),
-                       vars_vec);
+  return internal::CreateBinding(
+      make_shared<LinearCost>(c.transpose(), constant_term), vars_vec);
 }
 
 }  // anonymous namespace
 
+Binding<Cost> ParseCost(const symbolic::Expression& e) {
+  if (!e.is_polynomial()) {
+    ostringstream oss;
+    oss << "Expression " << e << " is not a polynomial. ParseCost does not"
+        << " support non-polynomial expression.\n";
+    throw runtime_error(oss.str());
+  }
+  const symbolic::Polynomial poly{e};
+  const int total_degree{poly.TotalDegree()};
+  auto e_extracted = ExtractVariablesFromExpression(e);
+  const VectorXDecisionVariable& vars_vec = e_extracted.first;
+  const auto& map_var_to_index = e_extracted.second;
+
+  if (total_degree > 2) {
+    return internal::ParsePolynomialCost(e);
+  } else if (total_degree == 2) {
+    return DoParseQuadraticCost(poly, vars_vec, map_var_to_index);
+  } else {
+    return DoParseLinearCost(e, vars_vec, map_var_to_index);
+  }
+}
+
+namespace internal {
 Binding<LinearCost> ParseLinearCost(const Expression& e) {
   auto p = ExtractVariablesFromExpression(e);
   return DoParseLinearCost(e, p.first, p.second);
@@ -96,28 +118,6 @@ Binding<PolynomialCost> ParsePolynomialCost(const symbolic::Expression& e) {
   return CreateBinding(make_shared<PolynomialCost>(
                            Vector1<Polynomiald>(polynomial), polynomial_vars),
                        var_vec);
-}
-
-Binding<Cost> ParseCost(const symbolic::Expression& e) {
-  if (!e.is_polynomial()) {
-    ostringstream oss;
-    oss << "Expression " << e << " is not a polynomial. ParseCost does not"
-        << " support non-polynomial expression.\n";
-    throw runtime_error(oss.str());
-  }
-  const symbolic::Polynomial poly{e};
-  const int total_degree{poly.TotalDegree()};
-  auto e_extracted = ExtractVariablesFromExpression(e);
-  const VectorXDecisionVariable& vars_vec = e_extracted.first;
-  const auto& map_var_to_index = e_extracted.second;
-
-  if (total_degree > 2) {
-    return ParsePolynomialCost(e);
-  } else if (total_degree == 2) {
-    return DoParseQuadraticCost(poly, vars_vec, map_var_to_index);
-  } else {
-    return DoParseLinearCost(e, vars_vec, map_var_to_index);
-  }
 }
 
 }  // namespace internal

@@ -11,6 +11,15 @@
 
 namespace drake {
 namespace solvers {
+
+/**
+ * Creates a cost based on the polynomial expression `e`. The resulting cost may
+ * be a LinearCost, a QuadraticCost or a PolynomialCost depending on the form of
+ * `e`.
+ * @throws std::runtime_error if `e` is not a polynomial expression.
+ */
+Binding<Cost> ParseCost(const symbolic::Expression& e);
+
 namespace internal {
 
 /*
@@ -27,11 +36,6 @@ Binding<QuadraticCost> ParseQuadraticCost(const symbolic::Expression& e);
  * Assist MathematicalProgram::AddPolynomialCost(...).
  */
 Binding<PolynomialCost> ParsePolynomialCost(const symbolic::Expression& e);
-
-/*
- * Assist MathematicalProgram::AddCost(...).
- */
-Binding<Cost> ParseCost(const symbolic::Expression& e);
 
 }  // namespace internal
 
