@@ -20,6 +20,18 @@ drake_cc_package_library(
 )
 
 drake_cc_library(
+    name = "trajectory_optimization_core",
+    srcs = [],
+    hdrs = ["trajectory_optimization.h"],
+    deps = [
+        "//common:essential",
+        "//common/trajectories:piecewise_polynomial",
+        "//solvers:mathematical_program",
+        "//systems/framework",
+    ],
+)
+
+drake_cc_library(
     name = "multiple_shooting",
     srcs = ["multiple_shooting.cc"],
     hdrs = ["multiple_shooting.h"],
