@@ -16,12 +16,13 @@ drake_cc_package_library(
         ":direct_collocation",
         ":direct_transcription",
         ":multiple_shooting",
+        ":trajectory_optimization_core",
     ],
 )
 
 drake_cc_library(
     name = "trajectory_optimization_core",
-    srcs = [],
+    srcs = ["trajectory_optimization.cc"],
     hdrs = ["trajectory_optimization.h"],
     deps = [
         "//common:essential",
@@ -36,6 +37,7 @@ drake_cc_library(
     srcs = ["multiple_shooting.cc"],
     hdrs = ["multiple_shooting.h"],
     deps = [
+        ":trajectory_optimization_core",
         "//common:essential",
         "//common/trajectories:piecewise_polynomial",
         "//solvers:mathematical_program",
