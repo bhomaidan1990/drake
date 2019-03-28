@@ -37,8 +37,10 @@ class CubicPolynomialSystem : public systems::VectorSystem<double> {
   }
 };
 
-VectorX<AutoDiffXd> cubic_bases(VectorX<AutoDiffXd> x) {
-  return Vector1<AutoDiffXd>{x.dot(x)};
+
+template <typename T>
+VectorX<T> cubic_bases(VectorX<T> x) {
+  return Vector1<T>{x.dot(x)};
 }
 
 // Verifies by only taking samples inside the region of attraction of the
@@ -50,11 +52,18 @@ GTEST_TEST(LyapunovTest, CubicPolynomialTest) {
   Eigen::RowVectorXd x_samples = Eigen::RowVectorXd::LinSpaced(21, -1., 1.);
 
   Eigen::VectorXd params = SampleBasedLyapunovAnalysis(
-      cubic, *context, &cubic_bases, x_samples, Vector1d{0.});
+      cubic, *context, &cubic_bases<AutoDiffXd>, x_samples, Vector1d{0.});
 
   // Make sure that the solver found some reasonable, well-conditioned answer.
   EXPECT_GE(params(0), .1);
   EXPECT_LE(params(0), 10.);
+
+  Vector1<Expression> state{Variable("x")};
+  /*drake::log()->info(
+      "E = " +
+      energy_params.dot(pendulum_bases<Expression>(state)).to_string());*/
+  drake::log()->info("V = " +
+                     params.dot(cubic_bases<Expression>(state)).to_string());
 }
 
 template <typename T>
