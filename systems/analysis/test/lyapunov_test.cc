@@ -109,18 +109,19 @@ GTEST_TEST(LyapunovTest, PendulumSampleBasedLyapunov) {
   Eigen::VectorXd energy_params = Eigen::VectorXd::Zero(9);
   energy_params(0) = p.mass() * p.gravity() * p.length();
   energy_params(2) = -p.mass() * p.gravity() * p.length();
-  energy_params(8) = p.mass() * p.length() * p.length();
+  energy_params(8) = 0.5 * p.mass() * p.length() * p.length();
 
   const double factor = energy_params(0) / params(0);
   params *= factor;
   EXPECT_NEAR(params[2], energy_params[2], 1e-4);
+  EXPECT_NEAR(params[8], energy_params[8], 1e-3);
 
   Vector2<Expression> state{Variable("q"), Variable("qd")};
   drake::log()->info(
       "E = " +
       energy_params.dot(pendulum_bases<Expression>(state)).to_string());
   drake::log()->info("V = " +
-                     params.dot(pendulum_bases<Expression>(state)).to_string());
+                     params.dot(pendulum_bases<Expression>(state)).to_string());//what is additional term in V ?
 }
 
 }  // namespace
